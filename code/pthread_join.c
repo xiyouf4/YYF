@@ -20,5 +20,6 @@ int main()
 	int *p = &t;
 	pthread_join(pid1, (void**)&p);
 	printf("结束返回%d\n", *p);
+	free(p);
 	return 0;
 }
