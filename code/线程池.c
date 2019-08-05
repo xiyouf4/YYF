@@ -64,7 +64,7 @@ void *run(void *arg) {
 		/*销毁线程池*/
 		if(pool->stop) {
 			pthread_mutex_unlock(&(pool->mutex));
-			pthread_exit(NULL);'
+			pthread_exit(NULL);
 		}
 
 		/*从任务列表里取出任务函数*/
@@ -126,6 +126,6 @@ int desory() {
 	}
 
 	pthread_mutex_destroy(&(pool->mutex));
-	pthread_cond_destory(&(pool->cond));
+	pthread_cond_destroy(&(pool->cond));
 	free(pool);
 }
