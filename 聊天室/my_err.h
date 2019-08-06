@@ -3,6 +3,6 @@
 #include "my_err.c"
 
 
-void my_err(char *err_string , int line);
+void MyErr(char *err_string , int line);
 
 #endif

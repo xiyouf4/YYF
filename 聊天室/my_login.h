@@ -3,9 +3,9 @@
 #include "my_login.c"
 #include "my_pack.h"
 
-int login(PACK *pack, MYSQL mysql1);
-int registered(PACK *pack, MYSQL mysql1);
-int change_password(PACK *pack, MYSQL mysql1);
-int find_password(PACK *pack, MYSQL mysql1);
+int Login(PACK *pack, MYSQL mysql1);
+int Registered(PACK *pack, MYSQL mysql1);
+int ChangePassword(PACK *pack, MYSQL mysql1);
+int FindPassword(PACK *pack, MYSQL mysql1);
 
 #endif

@@ -24,47 +24,47 @@
 #define SEND_FILE 18
 
 
-typedef struct{
-	int               send_fd;              
-	int               recv_fd;
-	int               send_account;
-	int               recv_account;
-	char              send_user[20];
-	char              recv_user[20];
-	char              messages[MAXIN];
-}DATA;
+typedef struct {
+    int               send_fd;              
+    int               recv_fd;
+    int               send_account;
+    int               recv_account;
+    char              send_user[20];
+    char              recv_user[20];
+    char              messages[MAXIN];
+} DATA;
 
 
-typedef struct{
-	int               friend_number;
-	int               friend_account[500];
-	char              friend_nickname[500][20];
-	int               friend_state[500];
-}FRIEND;
+typedef struct {
+    int               friend_number;
+    int               friend_account[500];
+    char              friend_nickname[500][20];
+    int               friend_state[500];
+} FRIEND;
 
 
-typedef struct{
-	int               group_account;
-	int               group_member_number;
-	int               group_member_account[500];	
-	char              group_member_nickname[500][20];
-	int               group_member_state[500];
-}GROUP;
+typedef struct {
+    int               group_account;
+    int               group_member_number;
+    int               group_member_account[500];	
+    char              group_member_nickname[500][20];
+    int               group_member_state[500];
+} GROUP;
 
 
-typedef struct{
-	int               type;
-	DATA              data;
-}PACK;
+typedef struct {
+    int               type;
+    DATA              data;
+} PACK;
 
 
-typedef struct{
-	char              filename[30];
-	int               filesize;
-	char              file[MAXIN];
-        int               send_account; 	
-	char              send_nickname[20];
-}FLE;
+typedef struct {
+    char              filename[30];
+    int               filesize;
+    char              file[MAXIN];
+    int               send_account; 	
+    char              send_nickname[20];
+} FLE;
 
 
 int               user_number;

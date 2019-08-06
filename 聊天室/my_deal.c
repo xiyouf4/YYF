@@ -6,7 +6,7 @@
 #include "my_login.h"
 #include "my_err.h"
 
-void *deal(void *recv_pack)
+void *Deal(void *recv_pack)
 {
 	PACK               *pack;
 	int                i;

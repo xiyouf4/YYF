@@ -6,7 +6,7 @@
 #define MAXIN 1024
 
 
-void my_send(const char *sed_string, int sock_fd);
-char *s_gets(char *str);
+void MySend(const char *sed_string, int sock_fd);
+char *SGets(char *str);
 
 #endif

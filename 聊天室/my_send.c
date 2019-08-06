@@ -29,6 +29,6 @@ char *s_gets(char *str)
 void my_send(const char *sed_string, int sock_fd)
 {
 	if(send(sock_fd, sed_string, sizeof(sed_string), 0) < 0)
-		my_err("send", __LINE__);
+		MyErr("send", __LINE__);
 }
 
