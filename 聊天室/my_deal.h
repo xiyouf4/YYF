@@ -21,10 +21,9 @@ void *deal(void *recv_pack) {
 	{
 		case LOGIN:
 			{
-				if(login(pack, mysql) != 0){
+				if (login(pack, mysql) != 0) {
                     memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
 					strcpy(pack->data.write_buff, "password error");
-                    printf("%s\n",pack->data.write_buff);
                     if (send(pack->data.recv_fd, pack, sizeof(PACK), 0) < 0) {
                         my_err("send", __LINE__);
                     }
