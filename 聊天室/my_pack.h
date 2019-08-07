@@ -1,6 +1,5 @@
 #ifndef _MY_PACK_H
 #define _MY_PACK_H
-#include "my_send.h"
 
 #define MAX_FRIEND 500
 
@@ -22,7 +21,12 @@
 #define LOOK_GROUP 16
 #define DIS_GROUP 17
 #define SEND_FILE 18
+#define MAXIN 1024
 
+
+pthread_mutex_t mutex;
+pthread_mutex_t mutex_cli;
+pthread_cond_t cond_cli;
 
 typedef struct {
     int               send_fd;              
@@ -31,7 +35,8 @@ typedef struct {
     int               recv_account;
     char              send_user[20];
     char              recv_user[20];
-    char              messages[MAXIN];
+    char              read_buff[MAXIN];
+    char              write_buff[MAXIN];
 } DATA;
 
 
@@ -67,8 +72,28 @@ typedef struct {
 } FLE;
 
 
-int               user_number;
-int               group_number;
+// 消息盒子
+typedef struct BOX {
+    // 接受消息的人的账号
+    int               recv_account;
+    // 发送消息人的账号
+    int               send_account[500];
+    // 发送好友请求人的账号
+    int               plz_account[500];
+    // 发送的消息
+    char              read_buff[500][MAXIN];
+    // 发送的请求
+    char              write_buff[500][100];
+    // 消息数量
+    int               talk_number;
+    // 请求数量
+    int               friend_number;
+    struct BOX        *next;
+} BOX;
+
+
+BOX *box_head = NULL;
+BOX *box_tail = NULL;
 
 
 #endif
