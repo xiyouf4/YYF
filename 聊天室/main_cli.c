@@ -58,19 +58,35 @@ void *thread_read(void *sock_fd) {
                            }
                            pthread_mutex_lock(&mutex_cli);
                            pthread_cond_wait(&cond_cli, &mutex_cli);
-                           pthread_mutex_unlock(&mutex_cli); 
+                           pthread_mutex_unlock(&mutex_cli);
+                       } else {
+                           printf("两次密码不一致!!!\n") ;
+                           printf("按下回车继续.......");
+                           choose = 5;
+                           getchar();
+                           getchar();
                        }
                        break;
-                   } 
+                   }
+           case 3:
+                   {
+                       send_pack->type = EXIT;
+                       if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
+                           my_err("send", __LINE__);
+                       }
+                       pthread_exit(0);
+                   }
            default:
                    {
                        printf("狗东西,好好输入!!!\n");
+                       printf("输入回车继续......");
+                       getchar();
                        break;
                    }
         }
         if (choose > 3 || choose < 1) {
             continue;   
-        } else {
+        } else if (choose == 1) {
             if (strcmp(send_pack->data.write_buff, "password error") == 0) {
                 printf("密码错误或账号错误!!\n按下回车继续.....");
                 getchar();
@@ -79,6 +95,13 @@ void *thread_read(void *sock_fd) {
             } else {
                 break;
             }
+        } else if (choose == 2) {
+            printf("注册成功!!\n");
+            printf("您的账号为:%d\n", send_pack->data.send_account);
+            printf("按下回车继续.......");
+            getchar();
+            getchar();
+            continue;
         }
     }
 }
@@ -91,6 +114,12 @@ void *thread_write(void *sock_fd) {
             my_err("recv", __LINE__);
         }
         switch(recv_pack->type) {
+            case EXIT:
+                    {
+                        printf("end.......\n");
+                        pthread_exit(0);
+                        break;
+                    }
             case LOGIN:
                     {
                         strcpy(send_pack->data.send_user, recv_pack->data.send_user);
@@ -103,10 +132,13 @@ void *thread_write(void *sock_fd) {
                     }
             case REGISTERED:
                     {
-                        pthread_mutex_lock(&mutex_cli);
                         send_pack->data.send_account = recv_pack->data.send_account;
+                        memset(send_pack->data.write_buff, 0, sizeof(send_pack->data.write_buff));
+                        strcpy(send_pack->data.write_buff, recv_pack->data.write_buff);
+                        pthread_mutex_lock(&mutex_cli);
                         pthread_cond_signal(&cond_cli);
-                        pthread_mutex_unlock(&mutex);
+                        pthread_mutex_unlock(&mutex_cli);
+                        break;
                     }
         }
     }

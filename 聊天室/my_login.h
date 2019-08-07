@@ -34,7 +34,6 @@ int login(PACK *pack, MYSQL mysql1) {
             return -1;
         }
         row = mysql_fetch_row(result);
-        printf("%s %s\n", row[2], recv_pack->data.read_buff);
         if (strcmp(row[2], recv_pack->data.read_buff) == 0) {
             strcpy(recv_pack->data.send_user, row[1]);
             memset(inedx, 0, sizeof(inedx));
@@ -73,7 +72,8 @@ int registered(PACK *pack, MYSQL mysql1) {
     }
     fread(&user_number, sizeof(int), 1, fp);
 	
-    sprintf(need, "insert into user_data values(%d,\"%s\",\"%s\",%d,%d)", user_number++, recv_pack->data.send_user, recv_pack->data.read_buff, 0, recv_pack->data.send_fd);
+    sprintf(need, "insert into user_data values(%d,\"%s\",\"%s\",%d,%d)", user_number++, recv_pack->data.send_user, recv_pack->data.read_buff, 0, recv_pack->data.recv_fd);
+    recv_pack->data.send_account = user_number-1;
     mysql_query(&mysql, need);
     fclose(fp);
     if ((fp = fopen("user_number.txt", "w")) == NULL) {

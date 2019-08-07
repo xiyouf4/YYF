@@ -39,7 +39,12 @@ void *deal(void *recv_pack) {
         case REGISTERED:
             {
                 registered(pack, mysql);
-                printf("注册成功\n");
+                memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
+                strcpy(pack->data.write_buff, "registered success!!");
+                if (send(pack->data.recv_fd, pack, sizeof(PACK), 0) < 0) {
+                    my_err("send", __LINE__);
+                }
+                break;
             }
         case ADD_FRIEND:
             {
