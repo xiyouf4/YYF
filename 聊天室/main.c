@@ -1,12 +1,18 @@
 #include <mysql/mysql.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <string.h>
 #include <sys/epoll.h>
 #include <pthread.h>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+
 #include "my_friends.h"
 #include "my_deal.h"
 #include "my_mysql.h"
 #include "my_socket.h"
-#include <unistd.h>
 #include "my_err.h"
 #include "my_pack.h"
 

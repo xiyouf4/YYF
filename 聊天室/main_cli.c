@@ -1,11 +1,14 @@
 #include <stdio.h>
 #include <pthread.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <string.h>
+#include <stdlib.h>
+
 #include "my_pack.h"
 #include "my_socket.h"
 #include "my_err.h"
 #include "my_mune.h"
-#include <netinet/in.h>
-#include <arpa/inet.h>
 
 PACK *send_pack;
 PACK *recv_pack;
@@ -104,6 +107,13 @@ void *thread_read(void *sock_fd) {
             continue;
         }
     }
+    while (1) {
+        mune();
+        scanf("%d", &choose);
+        getchar();
+
+
+    }
 }
 
 void *thread_write(void *sock_fd) {
@@ -147,7 +157,7 @@ void *thread_write(void *sock_fd) {
 
 
 int main() {
-	int               sock_fd;
+    int               sock_fd;
     pthread_t         pid1;
     pthread_t         pid2;
     struct sockaddr_in seve;

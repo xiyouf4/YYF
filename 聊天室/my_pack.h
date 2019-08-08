@@ -1,6 +1,6 @@
 #ifndef _MY_PACK_H
 #define _MY_PACK_H
-
+#include <pthread.h>
 #define MAX_FRIEND 500
 
 #define LOGIN 1
@@ -22,7 +22,7 @@
 #define DIS_GROUP 17
 #define SEND_FILE 18
 #define MAXIN 1024
-
+#define EXIT -1
 
 pthread_mutex_t mutex;
 pthread_mutex_t mutex_cli;
@@ -91,9 +91,7 @@ typedef struct BOX {
     struct BOX        *next;
 } BOX;
 
-
-BOX *box_head = NULL;
-BOX *box_tail = NULL;
-
+BOX *box_head;
+BOX *box_tail;
 
 #endif
