@@ -6,6 +6,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <mysql/mysql.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 #include "my_mysql.h"
 #include "my_pack.h"
@@ -15,7 +17,7 @@ int add_fir(PACK *pack, MYSQL mysql1) {
     PACK            *recv_pack = pack;
     MYSQL           mysql = mysql1;
     MYSQL_RES       *result;
-    MYSQL_ROW       row;
+    MYSQL_ROW       row, row1;
     BOX             *tmp = box_head;
     int             ret;
     char            need[100];
@@ -25,8 +27,10 @@ int add_fir(PACK *pack, MYSQL mysql1) {
     ret = mysql_query(&mysql, need);
     if (!ret) {
         result = mysql_store_result(&mysql);
-        if (result) {
-            row = mysql_fetch_row(result);
+        row = mysql_fetch_row(result);
+        if (row == NULL) {
+            pthread_mutex_unlock(&mutex);
+            return -1;
         }
         memset(need, 0, sizeof(need));
         sprintf(need, "select *from friends where user = %d and friend_user = %d", recv_pack->data.send_account, recv_pack->data.recv_account);
@@ -34,18 +38,24 @@ int add_fir(PACK *pack, MYSQL mysql1) {
         if (!ret) {
             // 如果可以查到数据说明对方已经是好友了 
             result = mysql_store_result(&mysql);
-            if (result) {
-                return 1;
+            row1 = mysql_fetch_row(result);
+            if (row1 != NULL) {
+                pthread_mutex_unlock(&mutex);
+                return -1;
             }
             if (atoi(row[3]) == 0) {
-                while (tmp->recv_account != recv_pack->data.recv_account && tmp != NULL) {
+                while (tmp) {
+                    if (tmp->recv_account == recv_pack->data.recv_account) {
+                        break;
+                    }
                     tmp = tmp->next;
                 }
                 memset(need, 0, sizeof(need));
                 sprintf(need, "账号为%d,昵称为%s的用户发来好友请求\n", recv_pack->data.send_account, recv_pack->data.send_user);
                 if (tmp != NULL) {
-                    tmp->plz_account[tmp->friend_number++] = recv_pack->data.send_account;
+                    tmp->plz_account[tmp->friend_number] = recv_pack->data.send_account;
                     strcpy(tmp->write_buff[tmp->friend_number], need);
+                    tmp->friend_number++;
                 } else {
                     tmp = (BOX *)malloc(sizeof(BOX));
                     tmp->recv_account = recv_pack->data.recv_account;
@@ -62,10 +72,15 @@ int add_fir(PACK *pack, MYSQL mysql1) {
                     }
                 }
                 pthread_mutex_unlock(&mutex);
+                return 0;
             } else {
                 recv_pack->data.send_fd = atoi(row[4]);
                 strcpy(recv_pack->data.recv_user, row[1]);
-                
+                strcpy(recv_pack->data.read_buff, need);
+                recv_pack->type = FRIENDS_PLZ;
+                if (send(recv_pack->data.send_fd, recv_pack, sizeof(PACK), 0) < 0) {
+                    my_err("send", __LINE__);
+                } 
                 pthread_mutex_unlock(&mutex);
                 
                 return 0;
@@ -74,3 +89,6 @@ int add_fir(PACK *pack, MYSQL mysql1) {
     }
 }
 
+int friends_plz(PACK *pack, MYSQL mysql1) {
+    
+}

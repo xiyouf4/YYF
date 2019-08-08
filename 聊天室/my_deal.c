@@ -20,6 +20,7 @@ void *deal(void *recv_pack) {
     pthread_detach(pthread_self());
 	PACK               *pack;
 	int                i;
+    BOX                *tmp = box_head;
 	MYSQL              mysql;
 	mysql = accept_mysql();
 	pack = (PACK*)recv_pack;
@@ -28,6 +29,7 @@ void *deal(void *recv_pack) {
 		case LOGIN:
 			{
 				if (login(pack, mysql) != 0) {
+                    pack->type = ACCOUNT_ERROR;
                     memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
 					strcpy(pack->data.write_buff, "password error");
                     if (send(pack->data.recv_fd, pack, sizeof(PACK), 0) < 0) {
@@ -38,6 +40,30 @@ void *deal(void *recv_pack) {
                     strcpy(pack->data.write_buff, "good");
                     if (send(pack->data.recv_fd, pack, sizeof(PACK), 0) < 0) {
                         my_err("send", __LINE__);
+                    }
+                    while (tmp != NULL && tmp->recv_account != pack->data.send_account) {
+                        tmp = tmp->next;
+                    }
+                    if (tmp == NULL) {
+                        tmp = (BOX *)malloc(sizeof(BOX));
+                        tmp->recv_account = pack->data.send_account;
+                        tmp->talk_number = tmp->friend_number = 0;
+                        tmp->next = NULL;
+                        if (box_head == NULL) {
+                            box_head = box_tail = tmp;
+                        } else {
+                            box_tail->next = tmp;
+                            box_tail = tmp;
+                        }
+                        if (send(pack->data.recv_fd, tmp, sizeof(BOX), 0) < 0) {
+                            my_err("send", __LINE__);
+                        }
+                    } else {
+                        if (send(pack->data.recv_fd, tmp, sizeof(BOX), 0) < 0) {
+                            my_err("send", __LINE__);
+                        }
+                        tmp->friend_number = 0;
+                        tmp->talk_number = 0;
                     }
                 }
                 break;
@@ -53,11 +79,45 @@ void *deal(void *recv_pack) {
                 
                 break;
             }
+        case CHANGE_PASSWORD:
+            {
+                if (change_password(pack, mysql) == 0) {
+                    memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
+                    strcpy(pack->data.write_buff, "success");
+                    if (send(pack->data.recv_fd, pack, sizeof(PACK), 0) < 0) {
+                        my_err("send", __LINE__);
+                    }
+                } else {
+                    memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
+                    strcpy(pack->data.write_buff, "fail");
+                    if (send(pack->data.recv_fd, pack, sizeof(PACK), 0) < 0) {
+                        my_err("send", __LINE__);        
+                    }
+                }
+                break;
+            }
         case ADD_FRIEND:
             {
-                   if (add_fir(pack, mysql) == 0) {
-                        send(pack->data.recv_fd, pack, sizeof(PACK), 0);
-                   }
+                if (add_fir(pack, mysql) == 0) {
+                    pack->type = ADD_FRIEND;
+                    memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
+                    strcpy(pack->data.write_buff, "success");
+                    if (send(pack->data.recv_fd, pack, sizeof(PACK) , 0) < 0) {
+                        my_err("send", __LINE__);
+                    }
+                } else {
+                    memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
+                    strcpy(pack->data.write_buff, "fail");
+                    if (send(pack->data.recv_fd, pack, sizeof(PACK), 0) < 0) {
+                        my_err("send", __LINE__);        
+                    } 
+                }
+                break;
+            }
+        case FRIENDS_PLZ:
+            {
+                friends_plz(pack, mysql);
+                break;
             }
 	}
 	close_mysql(mysql);

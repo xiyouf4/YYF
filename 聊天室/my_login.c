@@ -30,11 +30,11 @@ int login(PACK *pack, MYSQL mysql1) {
 
     if (!ret) {
         result = mysql_store_result(&mysql);
-        if (!result) {
+        row = mysql_fetch_row(result);
+        if (row == NULL) {
             pthread_mutex_unlock(&mutex);
             return -1;
         }
-        row = mysql_fetch_row(result);
         if (strcmp(row[2], recv_pack->data.read_buff) == 0) {
             strcpy(recv_pack->data.send_user, row[1]);
             memset(inedx, 0, sizeof(inedx));
@@ -89,8 +89,6 @@ int registered(PACK *pack, MYSQL mysql1) {
 }
 
 int change_password(PACK *pack, MYSQL mysql1) {
-    int                ret;
-    int                cont = 0;
     MYSQL_RES          *result = NULL;
     PACK               *recv_pack = pack;
     MYSQL              mysql = mysql1;
@@ -99,32 +97,29 @@ int change_password(PACK *pack, MYSQL mysql1) {
 
     sprintf(need, "select *from user_data where account = %d", recv_pack->data.send_account);
     pthread_mutex_lock(&mutex);
-    ret = mysql_query(&mysql, need);
-    if (!ret) {
-        result = mysql_store_result(&mysql);
-        if (result) {
-            while (row = mysql_fetch_row(result)) {
-                if (strcmp(recv_pack->data.read_buff, row[2]) == 0) {
-                    memset(need, 0, sizeof(need));
-                    sprintf(need, "update user_data set password = \"%s\" where account = %d", recv_pack->data.write_buff, recv_pack->data.send_account);	
-                    mysql_query(&mysql, need);
-                    mysql_free_result(result);
-                    pthread_mutex_unlock(&mutex);
-                    return 0;
-                }
-                cont++;
-            }
-            if (cont == 0) {
-                pthread_mutex_unlock(&mutex);
-                return -1;
-            }
+    mysql_query(&mysql, need);
+    result = mysql_store_result(&mysql);
+    row = mysql_fetch_row(result);
+    if (row) {
+        if (strcmp(recv_pack->data.read_buff, row[2]) == 0) {
+            recv_pack->data.recv_fd = atoi(row[4]);
+            memset(need, 0, sizeof(need));
+            sprintf(need, "update user_data set password = \"%s\" where account = %d", recv_pack->data.write_buff, recv_pack->data.send_account);
+            mysql_query(&mysql, need);
+            pthread_mutex_unlock(&mutex);
+            
+            return 0;
+        } else {
+            pthread_mutex_unlock(&mutex);
+            
+            return -1;
         }
     } else {
-        printf("query fail!\n");
         pthread_mutex_unlock(&mutex);
+
         return -1;
     }
-	
+
     return -1;
 }
 

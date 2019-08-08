@@ -87,30 +87,30 @@ int main() {
                     my_err("send", __LINE__);
                 }
                 memset(need, 0, sizeof(need));
-                sprintf(need, "updata user_data set user_state = 0 where user_state = 1 and user_socket = %d", events[i].data.fd);
+                sprintf(need, "update user_data set user_state = 0 where user_state = 1 and user_socket = %d", events[i].data.fd);
                 mysql_query(&mysql, need);
                 epoll_ctl(kdpfd, EPOLL_CTL_DEL, events[i].data.fd, &ev);
                 curfds--;
                 
                 continue;
             }
-			if (recv_pack.type != REGISTERED) {        
+			if (recv_pack.type != REGISTERED) {
  		    	memset(need, 0, sizeof(need));
                 sprintf(need, "select *from user_data where account = %d", recv_pack.data.send_account);
-                printf("%s\n", need);
                 pthread_mutex_lock(&mutex);
                 mysql_query(&mysql, need);
                 result = mysql_store_result(&mysql);
                 if (!mysql_fetch_row(result)) {
+                    recv_pack.type = ACCOUNT_ERROR;
                     memset(recv_pack.data.write_buff, 0, sizeof(recv_pack.data.write_buff));
                     strcpy(recv_pack.data.write_buff, "password error");
                     if (send(events[i].data.fd, &recv_pack, sizeof(PACK), 0) < 0) {
-                    my_err("send", __LINE__);
+                        my_err("send", __LINE__);
                     }
                     pthread_mutex_unlock(&mutex);
                     continue;
                 }
- 		    	memset(need, 0, sizeof(need));
+ 		    	memset(need, 0, sizeof(need)); 
  		    	sprintf(need, "update user_data set user_socket = %d where account = %d", events[i].data.fd, recv_pack.data.send_account);
  	    		mysql_query(&mysql, need); 
                 pthread_mutex_unlock(&mutex);

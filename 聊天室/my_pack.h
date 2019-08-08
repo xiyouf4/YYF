@@ -21,15 +21,20 @@
 #define LOOK_GROUP 16
 #define DIS_GROUP 17
 #define SEND_FILE 18
+#define FRIENDS_PLZ 19
 #define MAXIN 1024
 #define EXIT -1
+#define ACCOUNT_ERROR -2
+#define CARE 1
+#define OK 0
+#define BLACK -1
 
 pthread_mutex_t mutex;
 pthread_mutex_t mutex_cli;
 pthread_cond_t cond_cli;
 
 typedef struct {
-    int               send_fd;              
+    int               send_fd;
     int               recv_fd;
     int               send_account;
     int               recv_account;
