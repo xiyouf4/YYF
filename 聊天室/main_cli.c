@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <stdlib.h>
+#include <signal.h>
 
 #include "my_pack.h"
 #include "my_socket.h"
@@ -341,7 +342,6 @@ void *thread_box(void *sock_fd) {
 }
 
 void *thread_write(void *sock_fd) {
-
     pthread_t pid;    
     box = (BOX *)malloc(sizeof(BOX));
     recv_pack = (PACK*)malloc(sizeof(PACK));
@@ -469,6 +469,10 @@ void *thread_write(void *sock_fd) {
 }
 
 
+void mask_ctrl_c()
+{
+    printf("老哥求求你了别ctrl+c暴力退出了!!!!!!!!!\n");
+}
 
 int main() {
     int               sock_fd;
@@ -479,6 +483,7 @@ int main() {
     pthread_mutex_init(&mutex_cli, NULL);
     pthread_cond_init(&cond_cli, NULL);
     sock_fd = my_accept_cli();
+    signal(SIGINT,mask_ctrl_c);
     pthread_create(&pid1, NULL, thread_read, (void *)&sock_fd);
     pthread_create(&pid2, NULL, thread_write, (void *)&sock_fd);
     pthread_join(pid1, NULL);
