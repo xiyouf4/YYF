@@ -20,8 +20,6 @@ void *thread_read(void *sock_fd) {
     char              password[20];
     
     send_pack = (PACK *)malloc(sizeof(PACK));
-    /* 套接字编号放进结构体 */
-    send_pack->data.send_fd = *(int *)sock_fd;
     /* 1为登录,2为注册,3为退出 */
     while (1) {
         login_mune();
@@ -172,6 +170,26 @@ void *thread_read(void *sock_fd) {
                     }
             case 3:
                     {
+                        send_pack->type = DEL_FRIEND;
+                        printf("请输入想要删除好友的账号:\n");
+                        scanf("%d", &send_pack->data.recv_account);
+                        getchar();
+                        if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
+                            my_err("send", __LINE__);
+                        }
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_wait(&cond_cli, &mutex_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        if (strcmp(send_pack->data.write_buff, "success") == 0) {
+                            printf("删除成功!!!\n");
+                            printf("按下回车键继续..........");
+                            getchar();
+                        } else {
+                            printf("你没有账号为%d的好友!!!\n", send_pack->data.recv_account);
+                            printf("按下回车继续........");
+                            getchar();
+                        }
+                        break;
                     }
             case 4:
                     {
@@ -211,7 +229,99 @@ void *thread_read(void *sock_fd) {
                         }
                         break;
                     }
-            case 19:
+            case 5:
+                    {
+                        send_pack->type = BLACK_FRIEND;
+                        printf("请输入你想要拉黑的好友:\n");
+                        scanf("%d", &send_pack->data.recv_account);
+                        getchar();
+                        if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
+                            my_err("send", __LINE__);
+                        }
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_wait(&cond_cli, &mutex_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        if (strcmp(send_pack->data.write_buff, "success") == 0) {
+                            printf("账号为%d的好友已经被拉黑!!!\n", send_pack->data.recv_account);
+                            printf("按下回车继续.......");
+                            getchar();
+                        } else {
+                            printf("对方不是你的好友或对方不存在!!!\n");
+                            printf("按下回车继续...........");
+                            getchar();
+                        }
+                        break;
+                    }
+            case 6:
+                    {
+                        send_pack->type = WHITE_FRIEND;
+                        printf("请输入你想从黑名单里去除的好友:\n");
+                        scanf("%d", &send_pack->data.recv_account);
+                        getchar();
+                        if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
+                            my_err("send", __LINE__);
+                        }
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_wait(&cond_cli, &mutex_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        if (strcmp(send_pack->data.write_buff, "success") == 0) {
+                            printf("账号为%d的好友从黑名单里剔除!!\n", send_pack->data.recv_account);
+                            printf("按下回车继续......");
+                            getchar();
+                        } else {
+                            printf("你没有这个好友或者这个好友不在黑名单!!\n");
+                            printf("按下回车键继续.......");
+                            getchar();
+                        }
+                        break;
+                    }
+            case 7:
+                    {
+                        send_pack->type = CARE_FRIEND;
+                        printf("请输入你想要加入特别关心的好友账号:\n");
+                        scanf("%d", &send_pack->data.recv_account);
+                        getchar();
+                        if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
+                            my_err("send", __LINE__);
+                        }
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_wait(&cond_cli, &mutex_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        if (strcmp(send_pack->data.write_buff, "success") == 0) {
+                            printf("账号为%d的好友加入特别关心\n", send_pack->data.recv_account);
+                            printf("按下回车继续......");
+                            getchar();
+                        } else {
+                            printf("你没有这个好友!!\n");
+                            printf("按下回车键继续.......");
+                            getchar();
+                        }
+                        break;
+                    }
+            case 8:
+                    {
+                        send_pack->type = DISCARE_FRIEND;
+                        printf("请输入你想要取关的好友账号:\n");
+                        scanf("%d", &send_pack->data.recv_account);
+                        getchar();
+                        if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
+                            my_err("send", __LINE__);
+                        }
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_wait(&cond_cli, &mutex_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        if (strcmp(send_pack->data.write_buff, "success") == 0) {
+                            printf("账号为%d的好友取消特别关心\n", send_pack->data.recv_account);
+                            printf("按下回车继续......");
+                            getchar();
+                        } else {
+                            printf("你没有这个好友!!\n");
+                            printf("按下回车键继续.......");
+                            getchar();
+                        }
+                        break;
+                    }
+            case 23:
                     {
                             send_pack->type = EXIT;
                             if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
@@ -252,6 +362,7 @@ void *thread_write(void *sock_fd) {
                         strcpy(send_pack->data.send_user, recv_pack->data.send_user);
                         memset(send_pack->data.write_buff, 0, sizeof(send_pack->data.write_buff));
                         strcpy(send_pack->data.write_buff, recv_pack->data.write_buff);
+                        send_pack->data.send_fd = recv_pack->data.recv_fd;
                         pthread_create(&pid, NULL, thread_box, sock_fd);
                         pthread_join(pid, NULL);
                         printf("离线期间消息盒子中有%d条消息,%d个好友请求\n", box->talk_number, box->friend_number);
@@ -305,6 +416,51 @@ void *thread_write(void *sock_fd) {
                         strcpy(box->write_buff[box->friend_number], recv_pack->data.write_buff);
                         box->friend_number++;
                         printf("消息盒子中来了一条好友请求!!!\n");
+                        pthread_mutex_unlock(&mutex_cli);
+                        break;
+                    }
+            case DEL_FRIEND:
+                    {
+                        memset(send_pack->data.write_buff, 0, sizeof(send_pack->data.write_buff));
+                        strcpy(send_pack->data.write_buff, recv_pack->data.write_buff);
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_signal(&cond_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        break;
+                    }
+            case BLACK_FRIEND:
+                    {
+                        memset(send_pack->data.write_buff, 0, sizeof(send_pack->data.write_buff));
+                        strcpy(send_pack->data.write_buff, recv_pack->data.write_buff);
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_signal(&cond_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        break;
+                    }
+            case WHITE_FRIEND:
+                    {
+                        memset(send_pack->data.write_buff, 0, sizeof(send_pack->data.write_buff));
+                        strcpy(send_pack->data.write_buff, recv_pack->data.write_buff);
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_signal(&cond_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        break;
+                    }
+            case CARE_FRIEND:
+                    {
+                        memset(send_pack->data.write_buff, 0, sizeof(send_pack->data.write_buff));
+                        strcpy(send_pack->data.write_buff, recv_pack->data.write_buff);
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_signal(&cond_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        break;
+                    }
+            case DISCARE_FRIEND:
+                    {
+                        memset(send_pack->data.write_buff, 0, sizeof(send_pack->data.write_buff));
+                        strcpy(send_pack->data.write_buff, recv_pack->data.write_buff);
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_signal(&cond_cli);
                         pthread_mutex_unlock(&mutex_cli);
                         break;
                     }

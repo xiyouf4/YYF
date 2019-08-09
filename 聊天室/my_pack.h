@@ -22,6 +22,10 @@
 #define DIS_GROUP 17
 #define SEND_FILE 18
 #define FRIENDS_PLZ 19
+#define BLACK_FRIEND 20
+#define WHITE_FRIEND 21
+#define CARE_FRIEND 22
+#define DISCARE_FRIEND 23
 #define MAXIN 1024
 #define EXIT -1
 #define ACCOUNT_ERROR -2

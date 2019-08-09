@@ -122,6 +122,91 @@ void *deal(void *recv_pack) {
                 friends_plz(pack, mysql);
                 break;
             }
+        case DEL_FRIEND:
+            {
+                if (del_friend(pack, mysql) == 0) {
+                    memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
+                    strcpy(pack->data.write_buff, "success");
+                    if (send(pack->data.send_fd, pack, sizeof(PACK), 0) < 0) {
+                        my_err("send", __LINE__);
+                    }
+                } else {
+                    memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
+                    strcpy(pack->data.write_buff, "fail");
+                    if (send(pack->data.send_fd, pack, sizeof(PACK), 0) < 0) {
+                        my_err("send", __LINE__);
+                    }
+                }
+                break;
+            }
+        case BLACK_FRIEND:
+            {
+                if (black_friend(pack, mysql) == 0) {
+                    memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
+                    strcpy(pack->data.write_buff, "success");
+                    if (send(pack->data.send_fd, pack, sizeof(PACK), 0) < 0) {
+                        my_err("send", __LINE__);
+                    }
+                } else {
+                    memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
+                    strcpy(pack->data.write_buff, "fail");
+                    if (send(pack->data.send_fd, pack, sizeof(PACK), 0) < 0) {
+                        my_err("send", __LINE__);
+                    } 
+                }
+                break;
+            }
+        case WHITE_FRIEND:
+            {
+                if (white_friend(pack, mysql) == 0) {
+                    memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
+                    strcpy(pack->data.write_buff, "success");
+                    if (send(pack->data.send_fd, pack, sizeof(PACK), 0) < 0) {
+                        my_err("send", __LINE__);
+                    }
+                } else {
+                    memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
+                    strcpy(pack->data.write_buff, "fail");
+                    if (send(pack->data.send_fd, pack, sizeof(PACK), 0) < 0) {
+                        my_err("send", __LINE__);
+                    } 
+                }
+                break;
+            }
+        case CARE_FRIEND:
+            {
+                if (care_friend(pack, mysql) == 0) {
+                    memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
+                    strcpy(pack->data.write_buff, "success");
+                    if (send(pack->data.send_fd, pack, sizeof(PACK), 0) < 0) {
+                        my_err("send", __LINE__);
+                    }
+                } else {
+                    memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
+                    strcpy(pack->data.write_buff, "fail");
+                    if (send(pack->data.send_fd, pack, sizeof(PACK), 0) < 0) {
+                        my_err("send", __LINE__);
+                    } 
+                }
+                break;
+            }
+        case DISCARE_FRIEND:
+            {
+                if (discare_friend(pack, mysql) == 0) {
+                    memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
+                    strcpy(pack->data.write_buff, "success");
+                    if (send(pack->data.send_fd, pack, sizeof(PACK), 0) < 0) {
+                        my_err("send", __LINE__);
+                    }
+                } else {
+                    memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
+                    strcpy(pack->data.write_buff, "fail");
+                    if (send(pack->data.send_fd, pack, sizeof(PACK), 0) < 0) {
+                        my_err("send", __LINE__);
+                    } 
+                }
+                break;
+            }
 	}
 	close_mysql(mysql);
 }

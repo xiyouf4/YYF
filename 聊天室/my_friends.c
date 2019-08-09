@@ -91,17 +91,140 @@ int add_fir(PACK *pack, MYSQL mysql1) {
 }
 
 int friends_plz(PACK *pack, MYSQL mysql1) {
-       char         need[100]; 
-       MYSQL        mysql = mysql1;
-       PACK         *recv_pack = pack;
+    char            need[100]; 
+    MYSQL           mysql = mysql1;
+    PACK            *recv_pack = pack;
+    
+    pthread_mutex_lock(&mutex);
+    sprintf(need, "insert into friends values(%d,%d,0)", recv_pack->data.send_account, recv_pack->data.recv_account);
+    mysql_query(&mysql, need);
+    memset(need, 0, sizeof(need));
+    sprintf(need, "insert into friends values(%d,%d,0)", recv_pack->data.recv_account, recv_pack->data.send_account);
+    mysql_query(&mysql, need);
+    pthread_mutex_unlock(&mutex);
+    
+    return 0;
+}   
+     
+int del_friend(PACK *pack, MYSQL mysql1) {
+    PACK            *recv_pack = pack;
+    MYSQL           mysql = mysql1;
+    char            need[100];
+    MYSQL_ROW       row;
+    MYSQL_RES       *result;
 
-       pthread_mutex_lock(&mutex);
-       sprintf(need, "insert into friends values(%d,%d,0)", recv_pack->data.send_account, recv_pack->data.recv_account);
-       mysql_query(&mysql, need);
-       memset(need, 0, sizeof(need));
-       sprintf(need, "insert into friends values(%d,%d,0)", recv_pack->data.recv_account, recv_pack->data.send_account);
-       mysql_query(&mysql, need);
-       pthread_mutex_unlock(&mutex);
+    pthread_mutex_lock(&mutex);
+    sprintf(need, "select *from friends where user = %d and friend_user = %d", recv_pack->data.send_account, recv_pack->data.recv_account);
+    mysql_query(&mysql, need);
+    result = mysql_store_result(&mysql);
+    row = mysql_fetch_row(result);
+    if (row == NULL) {
+        pthread_mutex_unlock(&mutex);    
+        return -1;
+    }
+    memset(need, 0, sizeof(need));
+    sprintf(need, "delete from friends where user = %d and friend_user = %d", recv_pack->data.send_account, recv_pack->data.recv_account);
+    mysql_query(&mysql, need);
+    memset(need, 0, sizeof(need));
+    sprintf(need, "delete from friends where user = %d and friend_user = %d", recv_pack->data.recv_account, recv_pack->data.send_account);
+    mysql_query(&mysql, need);
+    pthread_mutex_unlock(&mutex);
+    
+    return 0;
+}
 
-       return 0;
+int black_friend(PACK *pack, MYSQL mysql1) {
+    PACK            *recv_pack = pack;
+    MYSQL           mysql = mysql1;
+    char            need[100];
+    MYSQL_ROW       row;
+    MYSQL_RES       *result;
+    
+    pthread_mutex_lock(&mutex);
+    sprintf(need, "select *from friends where user = %d and friend_user = %d", recv_pack->data.send_account, recv_pack->data.recv_account);
+    mysql_query(&mysql, need);
+    result = mysql_store_result(&mysql);
+    row = mysql_fetch_row(result);
+    if (row == NULL) {
+        pthread_mutex_unlock(&mutex);    
+        return -1;
+    }
+    memset(need, 0, sizeof(need));
+    sprintf(need, "update friends set realtion = -1 where user = %d and friend_user = %d", recv_pack->data.send_account, recv_pack->data.recv_account);
+    mysql_query(&mysql, need);
+    pthread_mutex_unlock(&mutex);
+
+    return 0;
+}
+
+int white_friend(PACK *pack, MYSQL mysql1) {
+    PACK            *recv_pack = pack;
+    MYSQL           mysql = mysql1;
+    char            need[100];
+    MYSQL_ROW       row;
+    MYSQL_RES       *result;
+
+    pthread_mutex_lock(&mutex);
+    sprintf(need, "select *from friends where user = %d and friend_user = %d", recv_pack->data.send_account, recv_pack->data.recv_account);
+    mysql_query(&mysql, need);
+    result = mysql_store_result(&mysql);
+    row = mysql_fetch_row(result);
+    if (row == NULL) {
+        pthread_mutex_unlock(&mutex);    
+        return -1;
+    }
+    if (atoi(row[2]) == OK) {
+        pthread_mutex_unlock(&mutex);
+        return 0;
+    }
+    memset(need, 0, sizeof(need));
+    sprintf(need, "update friends set realtion = 0 where user = %d and friend_user = %d", recv_pack->data.send_account, recv_pack->data.recv_account);
+    mysql_query(&mysql, need);
+    pthread_mutex_unlock(&mutex);
+
+    return 0;
+}
+
+int care_friend(PACK *pack, MYSQL mysql1) {
+    PACK            *recv_pack = pack;
+    MYSQL           mysql = mysql1;
+    char            need[100];
+    MYSQL_RES       *result;
+    MYSQL_ROW       row;
+
+    pthread_mutex_lock(&mutex);
+    sprintf(need, "select *from friends where user = %d and friend_user = %d", recv_pack->data.send_account, recv_pack->data.recv_account);
+    mysql_query(&mysql, need);
+    result = mysql_store_result(&mysql);
+    row = mysql_fetch_row(result);
+    if (row == NULL) {
+        pthread_mutex_unlock(&mutex);    
+        return -1;
+    }
+    memset(need, 0, sizeof(need));
+    sprintf(need, "update friends set realtion = 1 where user = %d and friend_user = %d", recv_pack->data.send_account, recv_pack->data.recv_account);
+    mysql_query(&mysql, need);
+    pthread_mutex_unlock(&mutex);
+}
+
+int discare_friend(PACK *pack, MYSQL mysql1) {
+    PACK            *recv_pack = pack;
+    MYSQL           mysql = mysql1;
+    char            need[100];
+    MYSQL_RES       *result;
+    MYSQL_ROW       row;
+
+    pthread_mutex_lock(&mutex);
+    sprintf(need, "select *from friends where user = %d and friend_user = %d", recv_pack->data.send_account, recv_pack->data.recv_account);
+    mysql_query(&mysql, need);
+    result = mysql_store_result(&mysql);
+    row = mysql_fetch_row(result);
+    if (row == NULL) {
+        pthread_mutex_unlock(&mutex);    
+        return -1;
+    }
+    memset(need, 0, sizeof(need));
+    sprintf(need, "update friends set realtion = 0 where user = %d and friend_user = %d", recv_pack->data.send_account, recv_pack->data.recv_account);
+    mysql_query(&mysql, need);
+    pthread_mutex_unlock(&mutex);
 }
