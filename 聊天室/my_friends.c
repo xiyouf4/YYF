@@ -61,7 +61,8 @@ int add_fir(PACK *pack, MYSQL mysql1) {
                     tmp->recv_account = recv_pack->data.recv_account;
                     tmp->friend_number = 0;
                     tmp->talk_number = 0;
-                    strcpy(tmp->write_buff[tmp->friend_number++], need);
+                    strcpy(tmp->write_buff[tmp->friend_number], need);
+                    tmp->plz_account[tmp->friend_number++] = recv_pack->data.send_account;
                     if (box_head == NULL) {
                         box_head = box_tail = tmp;
                         box_tail->next = NULL;
@@ -90,5 +91,17 @@ int add_fir(PACK *pack, MYSQL mysql1) {
 }
 
 int friends_plz(PACK *pack, MYSQL mysql1) {
-    
+       char         need[100]; 
+       MYSQL        mysql = mysql1;
+       PACK         *recv_pack = pack;
+
+       pthread_mutex_lock(&mutex);
+       sprintf(need, "insert into friends values(%d,%d,0)", recv_pack->data.send_account, recv_pack->data.recv_account);
+       mysql_query(&mysql, need);
+       memset(need, 0, sizeof(need));
+       sprintf(need, "insert into friends values(%d,%d,0)", recv_pack->data.recv_account, recv_pack->data.send_account);
+       mysql_query(&mysql, need);
+       pthread_mutex_unlock(&mutex);
+
+       return 0;
 }

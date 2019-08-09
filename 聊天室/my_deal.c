@@ -41,7 +41,10 @@ void *deal(void *recv_pack) {
                     if (send(pack->data.recv_fd, pack, sizeof(PACK), 0) < 0) {
                         my_err("send", __LINE__);
                     }
-                    while (tmp != NULL && tmp->recv_account != pack->data.send_account) {
+                    while (tmp != NULL) {
+                        if (tmp->recv_account == pack->data.send_account) {
+                            break;
+                        }
                         tmp = tmp->next;
                     }
                     if (tmp == NULL) {
