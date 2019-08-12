@@ -4,5 +4,7 @@
 #include <mysql/mysql.h>
 
 int send_fmes(PACK *pack, MYSQL mysql1);
+int read_message(PACK *pack, MYSQL mysql1);
+int del_message(PACK *pack, MYSQL msyql1);
 
 #endif

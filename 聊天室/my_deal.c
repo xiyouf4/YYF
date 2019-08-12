@@ -51,6 +51,7 @@ void *deal(void *recv_pack) {
                         tmp = (BOX *)malloc(sizeof(BOX));
                         tmp->recv_account = pack->data.send_account;
                         tmp->talk_number = tmp->friend_number = 0;
+                        tmp->number = 0;
                         tmp->next = NULL;
                         if (box_head == NULL) {
                             box_head = box_tail = tmp;
@@ -247,6 +248,28 @@ void *deal(void *recv_pack) {
                     }
                 }
                 break;
+            }
+        case READ_MESSAGE:
+            {
+                read_message(pack, mysql);
+                break;
+            }
+        case DEL_MESSAGE:
+            {
+                if (del_message(pack, mysql) == 0) {
+                    memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
+                    strcpy(pack->data.write_buff, "success");
+                    if (send(pack->data.send_fd, pack, sizeof(PACK), 0) < 0) {
+                        my_err("send", __LINE__);
+                    }
+                } else {
+                    memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
+                    strcpy(pack->data.write_buff, "fail");
+                    if (send(pack->data.send_fd, pack, sizeof(PACK), 0) < 0) {
+                        my_err("send", __LINE__);
+                    } 
+                }
+                break;    
             }
 	}
 	close_mysql(mysql);

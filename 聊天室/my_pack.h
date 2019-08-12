@@ -1,30 +1,53 @@
 #ifndef _MY_PACK_H
 #define _MY_PACK_H
 #include <pthread.h>
-#define MAX_FRIEND 500
 
+#define MAX_FRIEND 500
+// 登录
 #define LOGIN 1
+// 注册
 #define REGISTERED 2
+// 找回密码
 #define FIND_PASSWORD 3
+// 修改密码
 #define CHANGE_PASSWORD 4
+// 添加好友
 #define ADD_FRIEND 5
+// 删除好友
 #define DEL_FRIEND 6
+// 查看好友列表
 #define LOOK_LIST 7
+// 发消息
 #define SEND_FMES 8
+// 创建群
 #define CREATE_GROUP 9
+// 加入群
 #define ADD_GROUP 10
+// 退出群
 #define EXIT_GROUP 11
+// 删除群成员
 #define DEL_MEMBER 12
+// 设置管理员
 #define SET_ADMIN 13
+// 删除管理员
 #define DEL_ADMIN 14
+// 发送群消息
 #define SEND_GMES 15
+// 查看加入的群
 #define LOOK_GROUP 16
+// 群主删除群
 #define DIS_GROUP 17
+// 发送文件
 #define SEND_FILE 18
+// 好友请求
 #define FRIENDS_PLZ 19
+// 黑名单
 #define BLACK_FRIEND 20
+// 取消黑名单
 #define WHITE_FRIEND 21
+// 特别关心
 #define CARE_FRIEND 22
+// 取消特关
 #define DISCARE_FRIEND 23
 #define MAXIN 1024
 #define EXIT -1
@@ -33,6 +56,10 @@
 #define OK 0
 #define RECV_FMES 24
 #define BLACK -1
+#define READ_MESSAGE 25
+#define READ_GROUP_MESSAGE 26
+#define RECV_GROUP_MESSAGE 27
+#define DEL_MESSAGE 28
 
 pthread_mutex_t mutex;
 pthread_mutex_t mutex_cli;
@@ -49,7 +76,6 @@ typedef struct {
     char              write_buff[MAXIN];
 } DATA;
 
-
 typedef struct {
     int               friend_number;
     int               friend_account[500];
@@ -57,6 +83,19 @@ typedef struct {
     int               friend_state[500];
 } FRIEND;
 
+typedef struct {
+    int               number;
+    char              message[500][MAXIN];
+    int               send_user[500];
+    int               recv_user[500];
+} MESSAGE;
+
+typedef struct {
+    int               group_account;
+    int               message_number;
+    int               send_account[500];
+    char              message[500][MAXIN];
+} GROUP_MESSAGE;
 
 typedef struct {
     int               group_account;
@@ -66,12 +105,10 @@ typedef struct {
     int               group_member_state[500];
 } GROUP;
 
-
 typedef struct {
     int               type;
     DATA              data;
 } PACK;
-
 
 typedef struct {
     char              filename[30];
@@ -80,7 +117,6 @@ typedef struct {
     int               send_account; 	
     char              send_nickname[20];
 } FLE;
-
 
 // 消息盒子
 typedef struct BOX {
@@ -98,8 +134,17 @@ typedef struct BOX {
     int               talk_number;
     // 请求数量
     int               friend_number;
+    // 群里发送消息的人
+    int               send_account1[500];
+    // 消息内容
+    char              message[500][MAXIN];
+    // 群消息数量
+    int               number;
+    // 群号
+    int               group_account[500];
     struct BOX        *next;
 } BOX;
+
 
 BOX *box_head;
 BOX *box_tail;

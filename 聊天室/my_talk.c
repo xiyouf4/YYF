@@ -57,7 +57,7 @@ int send_fmes(PACK *pack, MYSQL mysql1) {
                 }
                 memset(recv_pack->data.write_buff, 0, sizeof(recv_pack->data.write_buff));
                 memset(need, 0, sizeof(need));
-                sprintf(need, "insert into chat_messages values(%d,%d,\"%s\")", recv_pack->data.send_account, recv_pack->data.recv_account,recv_pack->data.read_buff);
+                sprintf(need, "insert into chat_messages values(%d,%d,\"%s\",1,1)", recv_pack->data.send_account, recv_pack->data.recv_account,recv_pack->data.read_buff);
                 mysql_query(&mysql, need);
                 break;
             } else if(atoi(row[2]) == OK){
@@ -65,7 +65,7 @@ int send_fmes(PACK *pack, MYSQL mysql1) {
                     my_err("send", __LINE__);
                 }
                 memset(need, 0, sizeof(need));
-                sprintf(need, "insert into chat_messages values(%d,%d,\"%s\")", recv_pack->data.send_account, recv_pack->data.recv_account, recv_pack->data.read_buff);
+                sprintf(need, "insert into chat_messages values(%d,%d,\"%s\",1,1)", recv_pack->data.send_account, recv_pack->data.recv_account, recv_pack->data.read_buff);
                 mysql_query(&mysql, need);
                 break;
             }
@@ -82,7 +82,7 @@ int send_fmes(PACK *pack, MYSQL mysql1) {
                 tmp->send_account[tmp->talk_number] = recv_pack->data.send_account;
                 strcpy(tmp->read_buff[tmp->talk_number++], recv_pack->data.read_buff);
                 memset(need, 0, sizeof(need));
-                sprintf(need, "insert into chat_messages values(%d,%d,\"%s\")", recv_pack->data.send_account, recv_pack->data.recv_account,recv_pack->data.read_buff);
+                sprintf(need, "insert into chat_messages values(%d,%d,\"%s\",1,1)", recv_pack->data.send_account, recv_pack->data.recv_account,recv_pack->data.read_buff);
                 mysql_query(&mysql, need);
                 break;
             }
@@ -91,6 +91,56 @@ int send_fmes(PACK *pack, MYSQL mysql1) {
     }
     pthread_mutex_unlock(&mutex);
     recv_pack->type = SEND_FMES;
+
+    return 0;
+}
+
+int read_message(PACK *pack, MYSQL mysql1) {
+    PACK            *recv_pack = pack;
+    MYSQL           mysql =  mysql1;
+    MYSQL_RES       *result;
+    MYSQL_ROW       row;
+    char            need[200];
+    MESSAGE         *message;
+
+    pthread_mutex_lock(&mutex);
+    message = (MESSAGE *)malloc(sizeof(MESSAGE));
+    message->number = 0;
+    sprintf(need, "select *from chat_messages where send_user = %d and recv_user = %d and send_can_look = 1 union select *from chat_messages where send_user = %d and recv_user = %d and recv_can_look = 1", recv_pack->data.send_account, recv_pack->data.recv_account, recv_pack->data.recv_account, recv_pack->data.send_account);
+    mysql_query(&mysql, need);
+    result = mysql_store_result(&mysql);
+    while (row = mysql_fetch_row(result)) {
+       message->send_user[message->number] = atoi(row[0]);
+       message->recv_user[message->number] = atoi(row[1]);
+       strcpy(message->message[message->number++], row[2]);
+    }
+    if (send(recv_pack->data.send_fd, recv_pack, sizeof(PACK), 0) < 0) {
+        my_err("send", __LINE__);
+    }
+    if (send(recv_pack->data.send_fd, message, sizeof(MESSAGE), 0) < 0) {
+        my_err("send", __LINE__);
+    }
+    
+    pthread_mutex_unlock(&mutex);
+    return 0;
+}
+
+int del_message(PACK *pack, MYSQL mysql1) {
+    MYSQL           mysql = mysql1;
+    PACK            *recv_pack = pack;
+    MYSQL_RES       *result;
+    MYSQL_ROW       row;
+    char            need[100];
+
+    pthread_mutex_lock(&mutex);
+    sprintf(need, "update chat_messages set send_can_look = 0 where send_user = %d and recv_user = %d", recv_pack->data.send_account, recv_pack->data.recv_account);
+    mysql_query(&mysql, need);
+    memset(need, 0, sizeof(need));
+    sprintf(need, "update chat_messages set recv_can_look = 0 where recv_user = %d and send_user = %d", recv_pack->data.send_account, recv_pack->data.recv_account);
+    mysql_query(&mysql, need);
+    memset(need, 0, sizeof(need));
+    sprintf(need, "delete from chat_messages where send_can_look = 0 and recv_can_look = 0");
+    mysql_query(&mysql, need);
 
     return 0;
 }

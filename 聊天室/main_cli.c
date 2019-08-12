@@ -17,6 +17,8 @@ PACK *send_pack;
 PACK *recv_pack;
 BOX *box;
 FRIEND *list;
+MESSAGE *message;
+GROUP_MESSAGE *group_message;
 
 /* 用来发送数据的线程 */
 void *thread_read(void *sock_fd) {
@@ -459,7 +461,51 @@ void *thread_read(void *sock_fd) {
                         getchar();
                         break;
                     }
-            case 24:
+            case 20:
+                    {
+                        printf("请输入你要查看的好友:\n");
+                        scanf("%d", &send_pack->data.recv_account);
+                        send_pack->type = READ_MESSAGE;
+                        if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
+                            my_err("send", __LINE__);
+                        }
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_wait(&cond_cli, &mutex_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        if (message->number == 0) {
+                            printf("你和他之间还没有聊天记录!!\n");
+                        } else {
+                           for (int i = 0; i < message->number; ++i) {
+                               printf("%d---->%d:\t%s\n", message->send_user[i], message->recv_user[i], message->message[i]);
+                            }
+                        }
+                        printf("按下回车键继续.....");
+                        getchar();
+                        getchar();
+                        break;
+                    }
+            case 21:
+                    {
+                        send_pack->type = DEL_MESSAGE;
+                        printf("请输入要删除聊天记录的好友:\n");
+                        scanf("%d", &send_pack->data.recv_account);
+                        getchar();
+                        if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
+                            my_err("send", __LINE__);
+                        }
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_wait(&cond_cli, &mutex_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        if (strcmp(send_pack->data.write_buff, "success") == 0) {
+                            printf("删除成功!!\n");
+                        } else {
+                            printf("没有这个好友或与该好友没有记录!\n");
+                        }
+                        printf("按下回车键继续.....");
+                        getchar();
+                        break;
+                    }
+            case 26:
                     {
                             send_pack->type = EXIT;
                             if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
@@ -498,11 +544,20 @@ void *thread_recv_fmes(void *sock_fd) {
     pthread_exit(0);
 }
 
+void *thread_read_message(void *sock_fd) {
+    if (recv(*(int *)sock_fd, message, sizeof(MESSAGE), 0) < 0) {
+        my_err("recv", __LINE__);
+    }
+    pthread_exit(0);
+}
+
 void *thread_write(void *sock_fd) {
     pthread_t pid;
     list = (FRIEND *)malloc(sizeof(FRIEND));
     box = (BOX *)malloc(sizeof(BOX));
     recv_pack = (PACK*)malloc(sizeof(PACK));
+    message = (MESSAGE *)malloc(sizeof(MESSAGE));
+    group_message = (GROUP_MESSAGE *)malloc(sizeof(GROUP_MESSAGE));
     while (1) {
         memset(recv_pack, 0, sizeof(PACK));
         if (recv(*(int *)sock_fd, recv_pack, sizeof(PACK), 0) < 0) {
@@ -523,12 +578,21 @@ void *thread_write(void *sock_fd) {
                         send_pack->data.send_fd = recv_pack->data.recv_fd;
                         pthread_create(&pid, NULL, thread_box, sock_fd);
                         pthread_join(pid, NULL);
-                        printf("离线期间消息盒子中有%d条消息,%d个好友请求\n", box->talk_number, box->friend_number);
+                        printf("离线期间消息盒子中有%d条消息,%d个好友请求,%d条群消息", box->talk_number, box->friend_number, box->number);
                         pthread_mutex_lock(&mutex_cli);
                         pthread_cond_signal(&cond_cli);
                         pthread_mutex_unlock(&mutex_cli);
                         break; 
-                    }   
+                    }
+            case DEL_MESSAGE:
+                    {
+                        memset(send_pack->data.write_buff, 0, sizeof(send_pack->data.write_buff));
+                        strcpy(send_pack->data.write_buff, recv_pack->data.write_buff);
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_signal(&cond_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        break;
+                    }
             case ACCOUNT_ERROR:
                     {   
                         strcpy(send_pack->data.send_user, recv_pack->data.send_user);
@@ -649,6 +713,15 @@ void *thread_write(void *sock_fd) {
                         pthread_join(pid, NULL);                             
                         break;
                     }
+            case READ_MESSAGE:
+                    {
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_create(&pid, NULL, thread_read_message, sock_fd);
+                        pthread_join(pid, NULL);
+                        pthread_cond_signal(&cond_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        break;
+                    }
         }
     }
 }
@@ -668,7 +741,7 @@ int main() {
     pthread_mutex_init(&mutex_cli, NULL);
     pthread_cond_init(&cond_cli, NULL);
     sock_fd = my_accept_cli();
-    signal(SIGINT,mask_ctrl_c);
+//    signal(SIGINT,mask_ctrl_c);
     pthread_create(&pid1, NULL, thread_read, (void *)&sock_fd);
     pthread_create(&pid2, NULL, thread_write, (void *)&sock_fd);
     pthread_join(pid1, NULL);
