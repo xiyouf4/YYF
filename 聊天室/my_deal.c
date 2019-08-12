@@ -14,7 +14,7 @@
 #include "my_mysql.h"
 #include "my_friends.h"
 #include "my_login.h"
-
+#include "my_talk.h"
 
 void *deal(void *recv_pack) {
     pthread_detach(pthread_self());
@@ -204,6 +204,47 @@ void *deal(void *recv_pack) {
                     if (send(pack->data.send_fd, pack, sizeof(PACK), 0) < 0) {
                         my_err("send", __LINE__);
                     } 
+                }
+                break;
+            }
+        case LOOK_LIST:
+            {
+                FRIEND *list;
+                if ((list = look_list(pack, mysql)) != NULL) {
+                    memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
+                    strcpy(pack->data.write_buff, "success");
+                    if (send(pack->data.send_fd, pack, sizeof(PACK), 0) < 0) {
+                        my_err("send", __LINE__);
+                    }
+                    if (send(pack->data.send_fd, list, sizeof(FRIEND), 0) < 0) {
+                        my_err("send", __LINE__);
+                    }
+                } else {
+                    memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
+                    strcpy(pack->data.write_buff, "fail");
+                    if (send(pack->data.send_fd, pack, sizeof(PACK), 0) < 0) {
+                        my_err("send", __LINE__);
+                    }
+                    if (send(pack->data.send_fd, list, sizeof(FRIEND), 0) < 0) {
+                        my_err("send", __LINE__);
+                    }
+                }
+                break;       
+            }
+        case SEND_FMES:
+            {
+                if (send_fmes(pack, mysql) == -1) {
+                    memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
+                    strcpy(pack->data.write_buff, "#fail");
+                    if (send(pack->data.send_fd, pack, sizeof(PACK), 0) < 0) {
+                        my_err("send", __LINE__);
+                    }
+                } else {
+                    memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
+                    strcpy(pack->data.write_buff, "#succss");
+                    if (send(pack->data.send_fd, pack, sizeof(PACK), 0) < 0) {
+                        my_err("send", __LINE__);
+                    }
                 }
                 break;
             }

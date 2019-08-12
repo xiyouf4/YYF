@@ -228,3 +228,36 @@ int discare_friend(PACK *pack, MYSQL mysql1) {
     mysql_query(&mysql, need);
     pthread_mutex_unlock(&mutex);
 }
+
+FRIEND *look_list(PACK *pack, MYSQL mysql1) {
+    PACK            *recv_pack = pack;
+    MYSQL           mysql = mysql1;
+    char            need[100];
+    MYSQL_RES       *result, *result1;
+    MYSQL_ROW       row, row1;
+    FRIEND          *list;
+
+    list = (FRIEND *)malloc(sizeof(FRIEND));
+    list->friend_number = 0;
+    pthread_mutex_lock(&mutex);
+    sprintf(need, "select *from friends where user = %d", recv_pack->data.send_account);
+    mysql_query(&mysql, need);
+    result = mysql_store_result(&mysql);
+    while (row = mysql_fetch_row(result)) {
+        list->friend_account[list->friend_number] = atoi(row[1]);
+        list->friend_state[list->friend_number] = atoi(row[2]);
+        memset(need, 0, sizeof(need));
+        sprintf(need, "select *from user_data where account = %d", atoi(row[1]));
+        mysql_query(&mysql, need);
+        result1 = mysql_store_result(&mysql);
+        row1 = mysql_fetch_row(result1);
+        strcpy(list->friend_nickname[list->friend_number++], row1[1]);
+    }
+    if (list->friend_number == 0) {
+        pthread_mutex_lock(&mutex);
+        return NULL;
+    } else {
+        pthread_mutex_unlock(&mutex);
+        return list;
+    }
+}

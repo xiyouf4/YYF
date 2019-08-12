@@ -31,6 +31,7 @@
 #define ACCOUNT_ERROR -2
 #define CARE 1
 #define OK 0
+#define RECV_FMES 24
 #define BLACK -1
 
 pthread_mutex_t mutex;

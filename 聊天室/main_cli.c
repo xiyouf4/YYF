@@ -5,6 +5,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <termios.h>
+#include <unistd.h>
 
 #include "my_pack.h"
 #include "my_socket.h"
@@ -14,12 +16,19 @@
 PACK *send_pack;
 PACK *recv_pack;
 BOX *box;
+FRIEND *list;
 
 /* 用来发送数据的线程 */
 void *thread_read(void *sock_fd) {
     int               choose;
     char              password[20];
+    char              ch;
+    int               i = 0;
+    struct termios    old, new;
     
+    tcgetattr(0, &old);
+    new = old;
+    new.c_lflag &= ~(ECHO | ICANON);
     send_pack = (PACK *)malloc(sizeof(PACK));
     /* 1为登录,2为注册,3为退出 */
     while (1) {
@@ -34,7 +43,20 @@ void *thread_read(void *sock_fd) {
                        scanf("%d", &send_pack->data.send_account);
                        getchar();
                        printf("请输入密码:\n");
-                       scanf("%s", send_pack->data.read_buff);
+                       i = 0;
+                       while (1) {
+                           tcsetattr(0, TCSANOW, &new);
+                           scanf("%c", &ch);
+                           tcsetattr(0, TCSANOW, &old);
+                           if (ch == '\n') {
+                               send_pack->data.read_buff[i] = '\0';
+                               break;
+                           }
+                           send_pack->data.read_buff[i++] = ch;
+                           printf("*");
+                       }
+                       printf("\n");
+                      // scanf("%s", send_pack->data.read_buff);
                        if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
                            my_err("send", __LINE__);
                        }
@@ -51,10 +73,35 @@ void *thread_read(void *sock_fd) {
                        scanf("%s", send_pack->data.send_user);
                        getchar();
                        printf("请输入密码:\n");
-                       scanf("%s", send_pack->data.read_buff);
-                       getchar();
+                       i = 0;
+                       while (1) {
+                           tcsetattr(0, TCSANOW, &new);
+                           scanf("%c", &ch);
+                           tcsetattr(0, TCSANOW, &old);
+                           if (ch == '\n') {
+                               send_pack->data.read_buff[i] = '\0';
+                               break;
+                           }
+                           send_pack->data.read_buff[i++] = ch;
+                           printf("*");
+                       }
+                       printf("\n");
+                    // scanf("%s", send_pack->data.read_buff);
+                       i = 0;
                        printf("请再次输入密码:\n");
-                       scanf("%s", password);
+                       while (1) {
+                           tcsetattr(0, TCSANOW, &new);
+                           scanf("%c", &ch);
+                           tcsetattr(0, TCSANOW, &old);
+                           if (ch == '\n') {
+                               password[i] = '\0';
+                               break;
+                           }
+                           password[i++] = ch;
+                           printf("*"); 
+                       }
+                       printf("\n");
+                      // scanf("%s", password);
                        if (strcmp(password, send_pack->data.read_buff) == 0) {
                            printf("两次输入一制OK\n");
                            if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
@@ -67,7 +114,6 @@ void *thread_read(void *sock_fd) {
                            printf("两次密码不一致!!!\n") ;
                            printf("按下回车继续.......");
                            choose = 5;
-                           getchar();
                            getchar();
                        }
                        break;
@@ -95,12 +141,10 @@ void *thread_read(void *sock_fd) {
             if (strcmp(send_pack->data.write_buff, "password error") == 0) {
                 printf("密码错误或账号错误!!\n按下回车继续.....");
                 getchar();
-                getchar();
                 continue;
             } else {
                 printf("登陆成功!!\n");
                 printf("按下回车继续......\n");
-                getchar();
                 getchar();
                 break;
             }
@@ -108,7 +152,6 @@ void *thread_read(void *sock_fd) {
             printf("注册成功!!\n");
             printf("您的账号为:%d\n", send_pack->data.send_account);
             printf("按下回车继续.......");
-            getchar();
             getchar();
             continue;
         }
@@ -123,11 +166,35 @@ void *thread_read(void *sock_fd) {
                     {
                         send_pack->type = CHANGE_PASSWORD;
                         printf("请输入原始密码:\n");
-                        scanf("%s", send_pack->data.read_buff);
-                        getchar();
+                        i = 0;
+                        while (1) {
+                            tcsetattr(0, TCSANOW, &new);
+                            scanf("%c", &ch);
+                            tcsetattr(0, TCSANOW, &old);
+                            if (ch == '\n') {
+                                send_pack->data.read_buff[i] = '\0';
+                                break;
+                            }
+                            send_pack->data.read_buff[i++] = ch;
+                            printf("*");
+                        }
+                        printf("\n");
+                        // scanf("%s", send_pack->data.read_buff);
                         printf("请输入修改后的密码:\n");
-                        scanf("%s", send_pack->data.write_buff);
-                        getchar();
+                        i = 0;
+                        while (1) {
+                            tcsetattr(0, TCSANOW, &new);
+                            scanf("%c", &ch);
+                            tcsetattr(0, TCSANOW, &old);
+                            if (ch == '\n') {
+                                send_pack->data.write_buff[i] = '\0';
+                                break;
+                            }
+                            send_pack->data.write_buff[i++] = ch;
+                            printf("*");
+                        }
+                        printf("\n");
+                        // scanf("%s", send_pack->data.write_buff);
                         if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
                             my_err("send", __LINE__);
                         }
@@ -322,7 +389,77 @@ void *thread_read(void *sock_fd) {
                         }
                         break;
                     }
-            case 23:
+            case 9:
+                    {
+                        send_pack->type = LOOK_LIST;
+                        if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
+                            my_err("send", __LINE__);
+                        }
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_wait(&cond_cli, &mutex_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        if (strcmp(send_pack->data.write_buff, "success") == 0) {
+                            printf("好友列表:\n");
+                            for (int i = 0; i < list->friend_number; i++) {
+                                printf("%d\t%-20s\t", list->friend_account[i], list->friend_nickname[i]);
+                                if (list->friend_state[i] == 1) {
+                                    printf("在线\n");
+                                } else {
+                                    printf("不在线\n");
+                                }
+                            }
+                        } else {
+                            printf("你还没有好友!!\n");
+                        }
+                        printf("按下回车键继续.......");
+                        getchar();
+                        break;
+                    }
+            case 10:
+                    {
+                        send_pack->type = SEND_FMES;
+                        printf("请选择你要聊天的对象:\n");
+                        scanf("%d", &send_pack->data.recv_account);
+                        getchar();
+                        printf("开始与账号为%d的好友对话\n", send_pack->data.recv_account);
+                        while (1) {
+                            scanf("%s", send_pack->data.read_buff);
+                            if (strcmp(send_pack->data.read_buff, "#bey") == 0) {
+                                printf("与账号为%d的好友的聊天结束\n", send_pack->data.recv_account);
+                                break;
+                            }
+                            if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
+                                my_err("send", __LINE__);
+                            }
+                            pthread_mutex_lock(&mutex_cli);
+                            pthread_cond_wait(&cond_cli, &mutex_cli);
+                            pthread_mutex_unlock(&mutex_cli);
+                            if (strcmp(send_pack->data.write_buff, "#fail") == 0) {
+                                printf("没有账号为%d的好友\n", send_pack->data.recv_account);
+                                break;
+                            }
+                        }
+                        send_pack->data.recv_account = 0;
+                        printf("按下回车键个继续...");
+                        getchar();
+                        getchar();
+                        break;
+                    }
+            case 11:
+                    {
+                        if (box->talk_number == 0) {
+                            printf("你没有未看的好友消息!\n");
+                        } else {
+                            for (int i = 0; i < box->talk_number; ++i) {
+                                printf("账号%d:%s\n", box->send_account[i], box->read_buff[i]);
+                            }
+                            box->talk_number = 0;
+                        }
+                        printf("按下回车继续......");
+                        getchar();
+                        break;
+                    }
+            case 24:
                     {
                             send_pack->type = EXIT;
                             if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
@@ -341,8 +478,29 @@ void *thread_box(void *sock_fd) {
     pthread_exit(0);
 }
 
+void *thread_list(void *sock_fd) {
+    if (recv(*(int *)sock_fd, list, sizeof(FRIEND), 0) < 0) {
+        my_err("recv", __LINE__);
+    }
+    pthread_exit(0);
+}
+
+void *thread_recv_fmes(void *sock_fd) {
+    if (recv_pack->data.send_account == send_pack->data.recv_account) {
+        printf("账号为%d昵称为%s的好友说:\t%s\n", recv_pack->data.send_account, recv_pack->data.send_user, recv_pack->data.read_buff);
+    } else if(strcmp(recv_pack->data.write_buff, "ohyeah") == 0){
+        printf("来自特别关心%d昵称%s的好友说:\t%s\n", recv_pack->data.send_account, recv_pack->data.send_user, recv_pack->data.read_buff);
+    } else {
+        box->send_account[box->talk_number] = recv_pack->data.send_account;
+        strcpy(box->read_buff[box->talk_number++], recv_pack->data.read_buff);
+        printf("消息盒子里来了一条好友消息!\n");
+    }
+    pthread_exit(0);
+}
+
 void *thread_write(void *sock_fd) {
-    pthread_t pid;    
+    pthread_t pid;
+    list = (FRIEND *)malloc(sizeof(FRIEND));
     box = (BOX *)malloc(sizeof(BOX));
     recv_pack = (PACK*)malloc(sizeof(PACK));
     while (1) {
@@ -464,6 +622,33 @@ void *thread_write(void *sock_fd) {
                         pthread_mutex_unlock(&mutex_cli);
                         break;
                     }
+            case LOOK_LIST:
+                    {
+                        memset(send_pack->data.write_buff, 0, sizeof(send_pack->data.write_buff));
+                        strcpy(send_pack->data.write_buff, recv_pack->data.write_buff);
+                        memset(list, 0, sizeof(FRIEND));
+                        pthread_create(&pid, NULL, thread_list, sock_fd);
+                        pthread_join(pid, NULL);
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_signal(&cond_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        break;
+                    }
+            case SEND_FMES:
+                    {
+                        memset(send_pack->data.write_buff, 0, sizeof(send_pack->data.write_buff));
+                        strcpy(send_pack->data.write_buff, recv_pack->data.write_buff);
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_signal(&cond_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        break;
+                    }
+            case RECV_FMES:
+                    {
+                        pthread_create(&pid, NULL, thread_recv_fmes, sock_fd);
+                        pthread_join(pid, NULL);                             
+                        break;
+                    }
         }
     }
 }
@@ -475,11 +660,11 @@ void mask_ctrl_c()
 }
 
 int main() {
-    int               sock_fd;
-    pthread_t         pid1;
-    pthread_t         pid2;
-    struct sockaddr_in seve;
-	
+    int                 sock_fd;
+    pthread_t           pid1;
+    pthread_t           pid2;
+    struct sockaddr_in  seve;
+    
     pthread_mutex_init(&mutex_cli, NULL);
     pthread_cond_init(&cond_cli, NULL);
     sock_fd = my_accept_cli();
