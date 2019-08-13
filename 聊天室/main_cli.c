@@ -461,6 +461,70 @@ void *thread_read(void *sock_fd) {
                         getchar();
                         break;
                     }
+            case 13:
+                    {
+                        send_pack->type = ADD_GROUP;
+                        printf("请输入你想加的群的群号:\n");
+                        scanf("%d", &send_pack->data.recv_account);
+                        getchar();
+                        if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
+                            my_err("send", __LINE__);
+                        }
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_wait(&cond_cli, &mutex_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        if (strcmp(send_pack->data.write_buff, "success") == 0) {
+                            printf("加入群%d成功!\n", send_pack->data.recv_account);
+                        } else {
+                            printf("没有群号为%d的群!或你已加入该群!\n", send_pack->data.recv_account);
+                        }
+                        printf("按下回车键继续......");
+                        getchar();
+                        break;
+                    }
+            case 14:
+                    {
+                        send_pack->type = CREATE_GROUP;
+                        printf("请输入你要创建群的名称:\n");
+                        scanf("%s", send_pack->data.recv_user);
+                        getchar();
+                        if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
+                            my_err("send", __LINE__);
+                        }
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_wait(&cond_cli, &mutex_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        if (strcmp(send_pack->data.write_buff, "success") == 0) {
+                            printf("创建群成功!!\n");
+                            printf("群号%d\t群名%s\n", send_pack->data.recv_account, send_pack->data.recv_user);
+                        } else {
+                            printf("创建失败!!\n");
+                        }
+                        printf("按下回车键继续.....");
+                        getchar();
+                        break;
+                    }
+            case 15:
+                    {
+                        send_pack->type = EXIT_GROUP;
+                        printf("请输入你要退出的群的群号:\n");
+                        scanf("%d", &send_pack->data.recv_account);
+                        getchar();
+                        if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
+                            my_err("send", __LINE__);
+                        }
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_wait(&cond_cli, &mutex_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        if (strcmp(send_pack->data.write_buff, "success") == 0) {
+                            printf("已退出群%d!!!\n", send_pack->data.recv_account);
+                        } else {
+                            printf("你没有加入这个群!!\n");
+                        }
+                        printf("按下回车键继续......");
+                        getchar();
+                        break;
+                    }
             case 20:
                     {
                         printf("请输入你要查看的好友:\n");
@@ -505,7 +569,7 @@ void *thread_read(void *sock_fd) {
                         getchar();
                         break;
                     }
-            case 26:
+            case 27:
                     {
                             send_pack->type = EXIT;
                             if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
@@ -570,6 +634,26 @@ void *thread_write(void *sock_fd) {
                         pthread_exit(0);
                         break;
                     }
+            case EXIT_GROUP:
+                    {
+                        memset(send_pack->data.write_buff, 0, sizeof(send_pack->data.write_buff));
+                        strcpy(send_pack->data.write_buff, recv_pack->data.write_buff);
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_signal(&cond_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        break;
+                    }
+            case CREATE_GROUP:
+                    {
+                        strcpy(send_pack->data.recv_user, recv_pack->data.recv_user);
+                        send_pack->data.recv_account = recv_pack->data.recv_account;
+                        memset(send_pack->data.write_buff, 0, sizeof(send_pack->data.write_buff));
+                        strcpy(send_pack->data.write_buff, recv_pack->data.write_buff);
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_signal(&cond_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        break; 
+                    }
             case LOGIN:
                     {
                         strcpy(send_pack->data.send_user, recv_pack->data.send_user);
@@ -585,6 +669,15 @@ void *thread_write(void *sock_fd) {
                         break; 
                     }
             case DEL_MESSAGE:
+                    {
+                        memset(send_pack->data.write_buff, 0, sizeof(send_pack->data.write_buff));
+                        strcpy(send_pack->data.write_buff, recv_pack->data.write_buff);
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_signal(&cond_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        break;
+                    }
+            case ADD_GROUP:
                     {
                         memset(send_pack->data.write_buff, 0, sizeof(send_pack->data.write_buff));
                         strcpy(send_pack->data.write_buff, recv_pack->data.write_buff);
