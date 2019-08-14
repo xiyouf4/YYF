@@ -412,6 +412,10 @@ void *deal(void *recv_pack) {
                 }
                 break;   
             }
+        case SEND_FILE:
+            {
+                
+            }
 	}
 	close_mysql(mysql);
 }

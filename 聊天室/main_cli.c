@@ -659,9 +659,10 @@ void *thread_read(void *sock_fd) {
                         getchar();
                         break;
                     }
-            case 19:
+         /*   case 19:
                     {
                         struct stat buf;
+                        int fd;
                         send_pack->type = SEND_FILE;
                         printf("请输入你要发送文件的对象:\n");
                         scanf("%d", &send_pack->data.recv_account);
@@ -672,12 +673,18 @@ void *thread_read(void *sock_fd) {
                             printf("文件名输入错误\n");
                             printf("按下回车继续......");
                             getchar();
+                            break;
                         }
-                        if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
-                            my_err("send", __LINE__);
+                        if ((fd = open(send_pack->data.write_buff, O_RDONLY)) < 0) {
+                            printf("文件打开失败!!\n");
+                            printf("按下回车继续.....");
+                            getchar();
+                            break;
                         }
+                        close(fd);
+                        if (send(*(int *)sock_fd))
                         break;
-                    }
+                    }*/
             case 20:
                     {
                         printf("请输入你要查看的好友:\n");
@@ -917,6 +924,14 @@ void *thread_write(void *sock_fd) {
                         pthread_mutex_lock(&mutex_cli);
                         pthread_cond_signal(&cond_cli);
                         pthread_mutex_unlock(&mutex_cli);
+                        break;
+                    }
+            case SEND_FILE:
+                    {
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_signal(&cond_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        break;
                     }
             case LOOK_MEMBER:
                     {
@@ -925,6 +940,7 @@ void *thread_write(void *sock_fd) {
                         pthread_mutex_lock(&mutex_cli);
                         pthread_cond_signal(&cond_cli);
                         pthread_mutex_unlock(&mutex_cli);
+                        break;
                     }
             case SET_ADMIN:
                     {
@@ -1130,10 +1146,6 @@ void *thread_write(void *sock_fd) {
                         pthread_cond_signal(&cond_cli);
                         pthread_mutex_unlock(&mutex_cli);
                         break;
-                    }
-            case SEND_FMES:
-                    {
-                    
                     }
         }
     }
