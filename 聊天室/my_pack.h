@@ -57,9 +57,11 @@
 #define RECV_FMES 24
 #define BLACK -1
 #define READ_MESSAGE 25
-#define READ_GROUP_MESSAGE 26
-#define RECV_GROUP_MESSAGE 27
+#define READ_GMES 26
+#define RECV_GMES 27
 #define DEL_MESSAGE 28
+#define LOOK_MEMBER 29
+#define LOOK_GROUP_LIST 30
 
 pthread_mutex_t mutex;
 pthread_mutex_t mutex_cli;
@@ -70,8 +72,8 @@ typedef struct {
     int               recv_fd;
     int               send_account;
     int               recv_account;
-    char              send_user[20];
-    char              recv_user[20];
+    char              send_user[50];
+    char              recv_user[50];
     char              read_buff[MAXIN];
     char              write_buff[MAXIN];
 } DATA;
@@ -111,12 +113,19 @@ typedef struct {
 } PACK;
 
 typedef struct {
+    int               group_account[100];
+    char              group_name[100][20];
+    int               number;
+    int               group_state[100];
+} GROUP_G;
+
+/* typedef struct {
     char              filename[30];
     int               filesize;
     char              file[MAXIN];
     int               send_account; 	
     char              send_nickname[20];
-} FLE;
+} FLE; */
 
 // 消息盒子
 typedef struct BOX {

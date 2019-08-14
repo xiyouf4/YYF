@@ -8,6 +8,8 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <mysql/mysql.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 #include "my_err.h"
 #include "my_pack.h"
@@ -121,5 +123,53 @@ int change_password(PACK *pack, MYSQL mysql1) {
     }
 
     return -1;
+}
+
+int find_password(PACK *pack, MYSQL mysql1) {
+    MYSQL           mysql = mysql1;
+    MYSQL_RES       *result;
+    MYSQL_ROW       row;
+    char            need[150];
+    PACK            *recv_pack = pack;
+    int             cont = 0;
+
+    pthread_mutex_lock(&mutex);
+    sprintf(need, "select *from friends where user = %d", recv_pack->data.send_account);
+    mysql_query(&mysql, need);
+    result = mysql_store_result(&mysql);
+    while (row = mysql_fetch_row(result)) {
+        cont++;
+    }
+    if (cont != recv_pack->data.recv_account) {
+        strcpy(recv_pack->data.write_buff, "你找不回来你的密码了！！");
+        memset(need, 0, sizeof(need));
+        sprintf(need, "select *from user_data where account = %d", recv_pack->data.send_account);
+        mysql_query(&mysql, need);
+        result = mysql_store_result(&mysql);
+        row = mysql_fetch_row(result);
+        if (!row) {
+            strcpy(recv_pack->data.write_buff, "你的账号都是错的哦!!");
+        }
+        if (send(recv_pack->data.recv_fd, recv_pack, sizeof(PACK), 0) < 0) {
+            my_err("send", __LINE__);
+        }
+    } else {
+        memset(need, 0, sizeof(need));
+        sprintf(need, "select *from user_data where account = %d", recv_pack->data.send_account);
+        mysql_query(&mysql, need);
+        result = mysql_store_result(&mysql);
+        row = mysql_fetch_row(result);
+        if (!row) {
+            strcpy(recv_pack->data.write_buff, "你的账号都是错的哦!!");
+        } else {
+            sprintf(recv_pack->data.write_buff, "你的密码是%s", row[2]);
+        }
+        if (send(recv_pack->data.recv_fd, recv_pack, sizeof(PACK), 0) < 0) {
+            my_err("send", __LINE__);
+        }
+    }
+    
+    pthread_mutex_unlock(&mutex);
+    return 0;
 }
 

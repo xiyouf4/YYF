@@ -19,6 +19,8 @@ BOX *box;
 FRIEND *list;
 MESSAGE *message;
 GROUP_MESSAGE *group_message;
+GROUP *member_list;
+GROUP_G *group_list;
 
 /* 用来发送数据的线程 */
 void *thread_read(void *sock_fd) {
@@ -122,6 +124,26 @@ void *thread_read(void *sock_fd) {
                    }
            case 3:
                    {
+                       send_pack->type = FIND_PASSWORD;
+                       printf("请输入你的账号:\n");
+                       scanf("%d", &send_pack->data.send_account);
+                       getchar();
+                       printf("请输入你的好友数量:\n");
+                       scanf("%d", &send_pack->data.recv_account);
+                       getchar();
+                       if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
+                           my_err("send", __LINE__);
+                       }
+                       pthread_mutex_lock(&mutex_cli);
+                       pthread_cond_wait(&cond_cli, &mutex_cli);
+                       pthread_mutex_unlock(&mutex_cli);
+                       printf("%s\n", send_pack->data.write_buff);
+                       printf("按下回车键继续.......");
+                       getchar();
+                       break;
+                   }
+           case 4:
+                   {
                        send_pack->type = EXIT;
                        if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
                            my_err("send", __LINE__);
@@ -137,7 +159,7 @@ void *thread_read(void *sock_fd) {
                        break;
                    }
         }
-        if (choose > 3 || choose < 1) {
+        if (choose > 4 || choose < 1) {
             continue;   
         } else if (choose == 1) {
             if (strcmp(send_pack->data.write_buff, "password error") == 0) {
@@ -155,6 +177,8 @@ void *thread_read(void *sock_fd) {
             printf("您的账号为:%d\n", send_pack->data.send_account);
             printf("按下回车继续.......");
             getchar();
+            continue;
+        } else if (choose == 3) {
             continue;
         }
     }
@@ -461,6 +485,36 @@ void *thread_read(void *sock_fd) {
                         getchar();
                         break;
                     }
+            case 12:
+                    {
+                        send_pack->type = SEND_GMES;
+                        printf("请输入你要聊天的群号:\n");
+                        scanf("%d", &send_pack->data.recv_account);
+                        getchar();
+                        printf("开始发言:\n");
+                        while (1) {
+                            scanf("%s", send_pack->data.read_buff);
+                            getchar();
+                            if (strcmp(send_pack->data.read_buff, "#bey") == 0) {
+                                printf("在群%d的发言结束\n", send_pack->data.recv_account);
+                                break;
+                            }
+                            if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
+                                my_err("send", __LINE__);
+                            }
+                            pthread_mutex_lock(&mutex_cli);
+                            pthread_cond_wait(&cond_cli, &mutex_cli);
+                            pthread_mutex_unlock(&mutex_cli);
+                            if (strcmp(send_pack->data.write_buff, "#fail") == 0) {
+                                printf("没有群号为%d的群\n", send_pack->data.recv_account);
+                                break;
+                            }
+                        }
+                        send_pack->data.recv_account = 0;
+                        printf("按下回车键个继续...");
+                        getchar();
+                        break;
+                    }
             case 13:
                     {
                         send_pack->type = ADD_GROUP;
@@ -525,6 +579,105 @@ void *thread_read(void *sock_fd) {
                         getchar();
                         break;
                     }
+            case 16:
+                    {
+                        send_pack->type = SET_ADMIN;
+                        printf("请输入群号:\n");
+                        scanf("%d", &send_pack->data.recv_account);
+                        getchar();
+                        printf("输入要被设置为管理员的群员账号:\n");
+                        scanf("%s", send_pack->data.read_buff);
+                        getchar();
+                        if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
+                            my_err("send", __LINE__);
+                        }
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_wait(&cond_cli, &mutex_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        if (strcmp(send_pack->data.write_buff, "success") == 0) {
+                            printf("账号为%s的成员被设置为群%d的管理员!!\n", send_pack->data.read_buff, send_pack->data.recv_account);
+                        } else {
+                            printf("群%d里面没有%s这个成员!!\n", send_pack->data.recv_account, send_pack->data.read_buff);
+                        }
+                        printf("按下回车继续.......");
+                        getchar();
+                        break;
+                    }
+            case 17:
+                    {
+                        send_pack->type = DEL_ADMIN;
+                        printf("请输入群号:\n");
+                        scanf("%d", &send_pack->data.recv_account);
+                        getchar();
+                        printf("输入要被取消管理员的群员账号:\n");
+                        scanf("%s", send_pack->data.read_buff);
+                        getchar();
+                        if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
+                            my_err("send", __LINE__);
+                        }
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_wait(&cond_cli, &mutex_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        if (strcmp(send_pack->data.write_buff, "success") == 0) {
+                            printf("账号为%s的成员被取消为群%d的管理员!!\n", send_pack->data.read_buff, send_pack->data.recv_account);
+                        } else {
+                            printf("群%d里面没有%s这个成员!!\n", send_pack->data.recv_account, send_pack->data.read_buff);
+                        }
+                        printf("按下回车继续.......");
+                        getchar();
+                        break;
+                    }
+            case 18:
+                    {
+                        send_pack->type = LOOK_MEMBER;
+                        printf("输入你想查看的群:\n");
+                        scanf("%d", &send_pack->data.recv_account);
+                        getchar();
+                        if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
+                            my_err("send", __LINE__);
+                        }
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_wait(&cond_cli, &mutex_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        if (member_list->group_member_number == 0) {
+                            printf("没有群号为%d的群!!!\n", recv_pack->data.recv_account);
+                            printf("按下回车键继续.......");
+                            getchar();
+                            break;
+                        }
+                        for (int i = 0; i < member_list->group_member_number; ++i) {
+                            printf("%d\t%-20s\t", member_list->group_member_account[i], member_list->group_member_nickname[i]);
+                            if (member_list->group_member_state[i] == 1) {
+                                printf("群主\n");
+                            } else if (member_list->group_member_state[i] == 2) {
+                                printf("管理员\n");
+                            } else {
+                                printf("底层群员\n");
+                            }
+                        }
+                        printf("输入回车继续.......");
+                        getchar();
+                        break;
+                    }
+            case 19:
+                    {
+                        struct stat buf;
+                        send_pack->type = SEND_FILE;
+                        printf("请输入你要发送文件的对象:\n");
+                        scanf("%d", &send_pack->data.recv_account);
+                        printf("请输入你想要发送的文件的绝对路径(以'/'开头):\n");
+                        scanf("%s", send_pack->data.write_buff);
+                        getchar();
+                        if (lstat(recv_pack->data.write_buff, &buf) < 0) {
+                            printf("文件名输入错误\n");
+                            printf("按下回车继续......");
+                            getchar();
+                        }
+                        if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
+                            my_err("send", __LINE__);
+                        }
+                        break;
+                    }
             case 20:
                     {
                         printf("请输入你要查看的好友:\n");
@@ -569,7 +722,74 @@ void *thread_read(void *sock_fd) {
                         getchar();
                         break;
                     }
-            case 27:
+            case 22:
+                    {
+                        if (box->number == 0) {
+                            printf("消息盒子里面没有群消息!!");
+                        } else {
+                            for (int i = 0; i < box->number; i++) {
+                                printf("群号%d 发送人账号%d 消息内容:\t%s\n", box->group_account[i], box->send_account1[i], box->message[i]);    
+                            }
+                            box->number = 0;
+                        }
+                        printf("按下回车键继续......");
+                        getchar();
+                        break;
+                    }
+            case 23:
+                    {
+                        send_pack->type = DEL_MEMBER;
+                        printf("输入你的群号:\n");
+                        scanf("%d", &send_pack->data.recv_account);
+                        getchar();
+                        printf("请输入你的要删除的成员账号:\n");
+                        scanf("%s", send_pack->data.read_buff);
+                        getchar();
+                        if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
+                            my_err("send", __LINE__);
+                        }
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_wait(&cond_cli, &mutex_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        if (strcmp(send_pack->data.write_buff, "success") == 0) {
+                            printf("删除成功!!\n");
+                        } else {
+                            printf("你没有权限!!!!\n");
+                        }
+                        printf("按下回车键继续.....");
+                        getchar();
+                        break;
+                    }
+            case 24:
+                    {
+                        send_pack->type = LOOK_GROUP_LIST;
+                        if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
+                            my_err("send", __LINE__);
+                        }
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_wait(&cond_cli, &mutex_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        if (group_list->number == 0) {
+                            printf("你还没加群!!\n");
+                            printf("按下回车键继续........");
+                            getchar();
+                            break;
+                        }
+                        for (int i = 0; i < group_list->number; ++i) {
+                            printf("%d\t%-20s\t", group_list->group_account[i], group_list->group_name[i]);
+                            if (group_list->group_state[i] == 1) {
+                                printf("群主\n");
+                            } else if (group_list->group_state[i] == 2){
+                                printf("管理员\n");
+                            } else {
+                                printf("底层群员\n");
+                            }
+                        }
+                        printf("按下回车键继续......");
+                        getchar();
+                        break;
+                    }
+            case 26:
                     {
                             send_pack->type = EXIT;
                             if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
@@ -608,6 +828,17 @@ void *thread_recv_fmes(void *sock_fd) {
     pthread_exit(0);
 }
 
+void *thread_recv_gmes(void *sock_fd) {
+    if (recv_pack->data.recv_account == send_pack->data.recv_account) {
+        printf("群号%d 群名%s 账号%d 昵称%s:\t%s\n", recv_pack->data.recv_account, recv_pack->data.recv_user, recv_pack->data.send_account, recv_pack->data.send_user, recv_pack->data.read_buff);
+    } else {
+        printf("消息盒子里来了一条群消息!!\n");
+        box->group_account[box->number] = recv_pack->data.recv_account;
+        box->send_account1[box->number] = recv_pack->data.send_account;
+        strcpy(box->message[box->number++], recv_pack->data.read_buff);
+    }
+}
+
 void *thread_read_message(void *sock_fd) {
     if (recv(*(int *)sock_fd, message, sizeof(MESSAGE), 0) < 0) {
         my_err("recv", __LINE__);
@@ -615,8 +846,26 @@ void *thread_read_message(void *sock_fd) {
     pthread_exit(0);
 }
 
+void *thread_member(void *sock_fd) {
+    memset(member_list, 0, sizeof(GROUP));
+    if (recv(*(int *)sock_fd, member_list, sizeof(GROUP), 0) < 0) {
+        my_err("recv", __LINE__);
+    }
+    pthread_exit(0);
+}
+
+void *thread_group_list(void *sock_fd) {
+    memset(group_list, 0, sizeof(GROUP_G));
+    if (recv(*(int *)sock_fd, group_list, sizeof(GROUP_G), 0) < 0) {
+        my_err("recv", __LINE__);
+    }
+    pthread_exit(0);
+}
+
 void *thread_write(void *sock_fd) {
     pthread_t pid;
+    group_list = (GROUP_G *)malloc(sizeof(GROUP_G));
+    member_list = (GROUP *)malloc(sizeof(GROUP));
     list = (FRIEND *)malloc(sizeof(FRIEND));
     box = (BOX *)malloc(sizeof(BOX));
     recv_pack = (PACK*)malloc(sizeof(PACK));
@@ -635,6 +884,58 @@ void *thread_write(void *sock_fd) {
                         break;
                     }
             case EXIT_GROUP:
+                    {
+                        memset(send_pack->data.write_buff, 0, sizeof(send_pack->data.write_buff));
+                        strcpy(send_pack->data.write_buff, recv_pack->data.write_buff);
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_signal(&cond_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        break;
+                    }
+            case FIND_PASSWORD:
+                    {
+                        memset(send_pack->data.write_buff, 0, sizeof(send_pack->data.write_buff));
+                        strcpy(send_pack->data.write_buff, recv_pack->data.write_buff);
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_signal(&cond_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        break;
+                    }
+            case DEL_MEMBER:
+                    {
+                        memset(send_pack->data.write_buff, 0, sizeof(send_pack->data.write_buff));
+                        strcpy(send_pack->data.write_buff, recv_pack->data.write_buff);
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_signal(&cond_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        break;
+                    }
+            case LOOK_GROUP_LIST:
+                    {
+                        pthread_create(&pid, NULL, thread_group_list, sock_fd);
+                        pthread_join(pid, NULL);
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_signal(&cond_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                    }
+            case LOOK_MEMBER:
+                    {
+                        pthread_create(&pid, NULL, thread_member, sock_fd);
+                        pthread_join(pid, NULL);
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_signal(&cond_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                    }
+            case SET_ADMIN:
+                    {
+                        memset(send_pack->data.write_buff, 0, sizeof(send_pack->data.write_buff));
+                        strcpy(send_pack->data.write_buff, recv_pack->data.write_buff);
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_signal(&cond_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        break;
+                    }
+            case DEL_ADMIN:
                     {
                         memset(send_pack->data.write_buff, 0, sizeof(send_pack->data.write_buff));
                         strcpy(send_pack->data.write_buff, recv_pack->data.write_buff);
@@ -800,6 +1101,21 @@ void *thread_write(void *sock_fd) {
                         pthread_mutex_unlock(&mutex_cli);
                         break;
                     }
+            case SEND_GMES:
+                    {
+                        memset(send_pack->data.write_buff, 0, sizeof(send_pack->data.write_buff));
+                        strcpy(send_pack->data.write_buff, recv_pack->data.write_buff);
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_signal(&cond_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        break; 
+                    }
+            case RECV_GMES:
+                    {
+                        pthread_create(&pid, NULL, thread_recv_gmes, sock_fd);
+                        pthread_join(pid, NULL);                             
+                        break;
+                    }
             case RECV_FMES:
                     {
                         pthread_create(&pid, NULL, thread_recv_fmes, sock_fd);
@@ -814,6 +1130,10 @@ void *thread_write(void *sock_fd) {
                         pthread_cond_signal(&cond_cli);
                         pthread_mutex_unlock(&mutex_cli);
                         break;
+                    }
+            case SEND_FMES:
+                    {
+                    
                     }
         }
     }

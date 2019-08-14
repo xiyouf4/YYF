@@ -144,3 +144,79 @@ int del_message(PACK *pack, MYSQL mysql1) {
 
     return 0;
 }
+
+int send_gmes(PACK *pack, MYSQL mysql1) {
+    MYSQL           mysql = mysql1;
+    PACK            *recv_pack = pack;
+    MYSQL_RES       *result, *result1;
+    MYSQL_ROW       row, row1;
+    char            need[100];
+    BOX             *tmp = box_head;
+
+    pthread_mutex_lock(&mutex);
+    recv_pack->type = RECV_GMES;
+    sprintf(need, "select *from groups where group_account = %d", recv_pack->data.recv_account);
+    mysql_query(&mysql, need);
+    result = mysql_store_result(&mysql);
+    row = mysql_fetch_row(result);
+    if (!row) {
+        pthread_mutex_unlock(&mutex);
+        return -1;
+    }
+    memset(need, 0, sizeof(need));
+    sprintf(need, "select *from group_members where group_account = %d", recv_pack->data.recv_account);
+    mysql_query(&mysql, need);
+    result = mysql_store_result(&mysql);
+    while (row = mysql_fetch_row(result)) {
+        if (atoi(row[2]) == recv_pack->data.send_account) {
+            continue;
+        }
+        memset(need, 0, sizeof(need));
+        sprintf(need, "select *from user_data where account = %d", atoi(row[2]));
+        mysql_query(&mysql, need);
+        result1 = mysql_store_result(&mysql);
+        row1 = mysql_fetch_row(result1);
+        if (atoi(row1[3]) == 1) {
+            if (send(atoi(row1[4]), recv_pack, sizeof(PACK), 0) < 0) {
+                my_err("send", __LINE__);
+            }
+        } else {
+            while (tmp != NULL) {
+                if (tmp->recv_account == atoi(row1[0])) {
+                    break;
+                }
+                tmp = tmp->next;
+            }
+           /* tmp->send_account1[tmp->number] = recv_pack->data.send_account;
+            tmp->group_account[tmp->number] = recv_pack->data.send_account;
+            strcpy(tmp->message[tmp->number++], recv_pack->data.read_buff);
+            if (send(atoi(row1[4]), recv_pack, sizeof(PACK), 0) < 0) {
+                my_err("send", __LINE__);
+            }*/
+            if (tmp == NULL) {
+                tmp = (BOX *)malloc(sizeof(BOX));
+                tmp->number = 0;
+                tmp->recv_account = atoi(row1[0]);
+                tmp->send_account1[tmp->number] = recv_pack->data.send_account;
+                tmp->group_account[tmp->number] = recv_pack->data.recv_account;
+                strcpy(tmp->message[tmp->number++], recv_pack->data.read_buff);
+                if (box_head == NULL) {
+                    box_head = box_tail = tmp;
+                    box_tail->next = NULL;
+                } else {
+                    box_tail->next = tmp;
+                    box_tail = tmp;
+                    box_tail->next = NULL;
+                }
+            } else {
+                tmp->send_account1[tmp->number] = recv_pack->data.send_account;
+                tmp->group_account[tmp->number] = recv_pack->data.send_account;
+                strcpy(tmp->message[tmp->number++], recv_pack->data.read_buff);
+            }
+        }
+    }
+    recv_pack->type = SEND_GMES;
+    pthread_mutex_unlock(&mutex);
+
+    return 0;
+}
