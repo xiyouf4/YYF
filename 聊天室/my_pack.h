@@ -62,6 +62,7 @@
 #define DEL_MESSAGE 28
 #define LOOK_MEMBER 29
 #define LOOK_GROUP_LIST 30
+#define RECV_FILE 31
 
 pthread_mutex_t mutex;
 pthread_mutex_t mutex_cli;
@@ -119,13 +120,12 @@ typedef struct {
     int               group_state[100];
 } GROUP_G;
 
-/* typedef struct {
-    char              filename[30];
-    int               filesize;
-    char              file[MAXIN];
+typedef struct {
+    char              filename[50];
     int               send_account; 	
-    char              send_nickname[20];
-} FLE; */
+    char              send_nickname[50];
+    int               have;
+} FLE;
 
 // 消息盒子
 typedef struct BOX {

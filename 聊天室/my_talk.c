@@ -220,3 +220,39 @@ int send_gmes(PACK *pack, MYSQL mysql1) {
 
     return 0;
 }
+
+int send_file(PACK *pack, MYSQL mysql1) {
+    MYSQL           mysql = mysql1;
+    PACK            *recv_pack = pack;
+    MYSQL_RES       *result;
+    MYSQL_ROW       row;
+    char            need[100];
+
+    pthread_mutex_lock(&mutex);
+    sprintf(need, "select *from friends where user = %d and friend_user = %d", recv_pack->data.send_account, recv_pack->data.recv_account);
+    mysql_query(&mysql, need);
+    result = mysql_store_result(&mysql);
+    row = mysql_fetch_row(result);
+    if (!row) {
+        pthread_mutex_unlock(&mutex);
+        return -1;
+    }
+    memset(need, 0, sizeof(need));
+    sprintf(need, "select *from user_data where account = %d", recv_pack->data.recv_account);
+    mysql_query(&mysql, need);
+    result = mysql_store_result(&mysql);
+    row = mysql_fetch_row(result);
+    if (atoi(row[3]) == 0) {
+        pthread_mutex_unlock(&mutex);
+        return -1;
+    } else {
+        recv_pack->data.recv_fd = atoi(row[4]);
+        recv_pack->type = RECV_FILE;
+        if (send(recv_pack->data.recv_fd, recv_pack, sizeof(PACK), 0) < 0) {
+            my_err("send", __LINE__);
+        }
+        recv_pack->type = SEND_FILE;
+        pthread_mutex_unlock(&mutex);
+        return 0;
+    }
+}

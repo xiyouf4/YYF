@@ -24,6 +24,7 @@ MESSAGE *message;
 GROUP_MESSAGE *group_message;
 GROUP *member_list;
 GROUP_G *group_list;
+FLE *file;
 
 /* 用来发送数据的线程 */
 void *thread_read(void *sock_fd) {
@@ -697,7 +698,15 @@ void *thread_read(void *sock_fd) {
                         pthread_mutex_lock(&mutex_cli);
                         pthread_cond_wait(&cond_cli, &mutex_cli);
                         pthread_mutex_unlock(&mutex_cli);
-                        if (strcmp(send_pack->data.read_buff, "success"))
+                        if (strcmp(send_pack->data.read_buff, "success") == 0) {
+                            printf("等带对方接收...\n");;
+                            printf("按下回车键继续....");
+                            getchar();
+                        } else {
+                            printf("对方不是你的好友!!!");
+                            printf("按下回车继续......");
+                            getchar();
+                        }
                         break;
                     }
             case 20:
@@ -811,6 +820,25 @@ void *thread_read(void *sock_fd) {
                         getchar();
                         break;
                     }
+            case 25:
+                    {
+                        if (file->have == 0) {
+                            printf("没有人给你发文件!!\n");
+                            printf("按下回车键继续.....");
+                            getchar();
+                            break;
+                        } else {
+                            printf("账号%d昵称%s的好友发来%s的文件\n", file->send_account, file->send_nickname, file->filename);
+                            printf("请选择:\n1. 接收 2. 拒绝\n");
+                            scanf("%d", &choose);
+                            if (choose == 1) {
+                                
+                            } else {
+                                
+                            }
+                        }
+                        break;
+                    }
             case 26:
                     {
                             send_pack->type = EXIT;
@@ -862,6 +890,16 @@ void *thread_recv_gmes(void *sock_fd) {
     }
 }
 
+void *thread_recv_file(void *sock_fd) {
+    memset(file, 0, sizeof(file));
+    file->send_account = recv_pack->data.send_account;
+    strcpy(file->send_nickname, recv_pack->data.send_user);
+    strcpy(file->filename, recv_pack->data.write_buff);
+    file->have = 1;
+    printf("账号%d\t昵称%s\t的好友给你发送了一个%s文件快去接收吧", file->send_account, file->send_nickname, file->filename);
+    pthread_exit(0);
+}
+
 void *thread_read_message(void *sock_fd) {
     if (recv(*(int *)sock_fd, message, sizeof(MESSAGE), 0) < 0) {
         my_err("recv", __LINE__);
@@ -894,6 +932,8 @@ void *thread_write(void *sock_fd) {
     recv_pack = (PACK*)malloc(sizeof(PACK));
     message = (MESSAGE *)malloc(sizeof(MESSAGE));
     group_message = (GROUP_MESSAGE *)malloc(sizeof(GROUP_MESSAGE));
+    file = (FLE *)malloc(sizeof(FLE));
+    file->have = 0;
     while (1) {
         memset(recv_pack, 0, sizeof(PACK));
         if (recv(*(int *)sock_fd, recv_pack, sizeof(PACK), 0) < 0) {
@@ -944,9 +984,17 @@ void *thread_write(void *sock_fd) {
                     }
             case SEND_FILE:
                     {
+                        memset(send_pack->data.read_buff, 0, sizeof(send_pack->data.read_buff));
+                        strcpy(send_pack->data.read_buff, recv_pack->data.read_buff);
                         pthread_mutex_lock(&mutex_cli);
                         pthread_cond_signal(&cond_cli);
                         pthread_mutex_unlock(&mutex_cli);
+                        break;
+                    }
+            case RECV_FILE:
+                    {
+                        pthread_create(&pid, NULL, thread_recv_file, sock_fd);
+                        pthread_join(pid, NULL);
                         break;
                     }
             case LOOK_MEMBER:

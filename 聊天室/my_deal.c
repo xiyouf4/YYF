@@ -400,7 +400,6 @@ void *deal(void *recv_pack) {
                  if (del_member(pack, mysql) == 0) {
                     memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
                     strcpy(pack->data.write_buff, "success");
-                    printf("%s\n", pack->data.write_buff);
                     if (send(pack->data.send_fd, pack, sizeof(PACK), 0) < 0) {
                         my_err("send", __LINE__);
                     }
@@ -415,7 +414,20 @@ void *deal(void *recv_pack) {
             }
         case SEND_FILE:
             {
-                
+                if (send_file(pack, mysql) == 0) {
+                    memset(pack->data.read_buff, 0, sizeof(pack->data.read_buff));
+                    strcpy(pack->data.read_buff, "success");
+                    if (send(pack->data.send_fd, pack, sizeof(PACK), 0) < 0) {
+                        my_err("send", __LINE__);
+                    }
+                } else {
+                    memset(pack->data.read_buff, 0, sizeof(PACK));
+                    strcpy(pack->data.read_buff, "fail");
+                    if (send(pack->data.send_fd, pack, sizeof(PACK), 0) < 0) {
+                        my_err("send", __LINE__);
+                    }
+                }
+                break;
             }
 	}
 	close_mysql(mysql);
