@@ -43,6 +43,8 @@ int add_fir(PACK *pack, MYSQL mysql1) {
                 pthread_mutex_unlock(&mutex);
                 return -1;
             }
+            memset(need, 0, sizeof(need));
+            sprintf(need, "账号为%d,昵称为%s的用户发来好友请求\n", recv_pack->data.send_account, recv_pack->data.send_user);
             if (atoi(row[3]) == 0) {
                 while (tmp) {
                     if (tmp->recv_account == recv_pack->data.recv_account) {
@@ -50,8 +52,6 @@ int add_fir(PACK *pack, MYSQL mysql1) {
                     }
                     tmp = tmp->next;
                 }
-                memset(need, 0, sizeof(need));
-                sprintf(need, "账号为%d,昵称为%s的用户发来好友请求\n", recv_pack->data.send_account, recv_pack->data.send_user);
                 if (tmp != NULL) {
                     tmp->plz_account[tmp->friend_number] = recv_pack->data.send_account;
                     strcpy(tmp->write_buff[tmp->friend_number], need);
@@ -245,17 +245,17 @@ FRIEND *look_list(PACK *pack, MYSQL mysql1) {
     result = mysql_store_result(&mysql);
     while (row = mysql_fetch_row(result)) {
         list->friend_account[list->friend_number] = atoi(row[1]);
-        list->friend_state[list->friend_number] = atoi(row[2]);
         memset(need, 0, sizeof(need));
         sprintf(need, "select *from user_data where account = %d", atoi(row[1]));
         mysql_query(&mysql, need);
         result1 = mysql_store_result(&mysql);
         row1 = mysql_fetch_row(result1);
-        strcpy(list->friend_nickname[list->friend_number++], row1[1]);
+        strcpy(list->friend_nickname[list->friend_number], row1[1]);
+        list->friend_state[list->friend_number++] = atoi(row1[3]);
     }
     if (list->friend_number == 0) {
-        pthread_mutex_lock(&mutex);
-        return NULL;
+        pthread_mutex_unlock(&mutex);
+        return list;
     } else {
         pthread_mutex_unlock(&mutex);
         return list;

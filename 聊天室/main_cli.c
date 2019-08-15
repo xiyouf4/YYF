@@ -7,6 +7,9 @@
 #include <signal.h>
 #include <termios.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
 
 #include "my_pack.h"
 #include "my_socket.h"
@@ -237,6 +240,7 @@ void *thread_read(void *sock_fd) {
                             printf("按下回车继续.......\n");
                             getchar();
                         }
+                        memset(send_pack->data.write_buff, 0, sizeof(send_pack->data.write_buff));
                         break;
                     }
             case 2:
@@ -260,6 +264,7 @@ void *thread_read(void *sock_fd) {
                             printf("按下回车键继续.......");
                             getchar();
                         }
+                        memset(send_pack->data.write_buff, 0, sizeof(send_pack->data.write_buff));
                         break;
                     }
             case 3:
@@ -283,6 +288,7 @@ void *thread_read(void *sock_fd) {
                             printf("按下回车继续........");
                             getchar();
                         }
+                        memset(send_pack->data.write_buff, 0, sizeof(send_pack->data.write_buff));
                         break;
                     }
             case 4:
@@ -318,7 +324,9 @@ void *thread_read(void *sock_fd) {
                             box->friend_number = 0;
                             printf("处理完毕!!\n");
                             printf("回车键继续.......");
-                            pthread_mutex_unlock(&mutex);
+                            pthread_mutex_unlock(&mutex_cli);
+                            memset(send_pack->data.write_buff, 0, sizeof(send_pack->data.write_buff));
+                            memset(send_pack->data.write_buff, 0, sizeof(send_pack->data.read_buff));
                             getchar();
                         }
                         break;
@@ -424,6 +432,7 @@ void *thread_read(void *sock_fd) {
                         pthread_mutex_lock(&mutex_cli);
                         pthread_cond_wait(&cond_cli, &mutex_cli);
                         pthread_mutex_unlock(&mutex_cli);
+                        printf("%s\n", send_pack->data.write_buff);
                         if (strcmp(send_pack->data.write_buff, "success") == 0) {
                             printf("好友列表:\n");
                             for (int i = 0; i < list->friend_number; i++) {
@@ -659,7 +668,7 @@ void *thread_read(void *sock_fd) {
                         getchar();
                         break;
                     }
-         /*   case 19:
+            case 19:
                     {
                         struct stat buf;
                         int fd;
@@ -682,9 +691,15 @@ void *thread_read(void *sock_fd) {
                             break;
                         }
                         close(fd);
-                        if (send(*(int *)sock_fd))
+                        if (send(*(int *)sock_fd, send_pack, sizeof(PACK), 0) < 0) {
+                            my_err("send", __LINE__);
+                        }
+                        pthread_mutex_lock(&mutex_cli);
+                        pthread_cond_wait(&cond_cli, &mutex_cli);
+                        pthread_mutex_unlock(&mutex_cli);
+                        if (strcmp(send_pack->data.read_buff, "success"))
                         break;
-                    }*/
+                    }
             case 20:
                     {
                         printf("请输入你要查看的好友:\n");
@@ -816,6 +831,7 @@ void *thread_box(void *sock_fd) {
 }
 
 void *thread_list(void *sock_fd) {
+    memset(list, 0, sizeof(FRIEND));
     if (recv(*(int *)sock_fd, list, sizeof(FRIEND), 0) < 0) {
         my_err("recv", __LINE__);
     }
@@ -1045,7 +1061,7 @@ void *thread_write(void *sock_fd) {
                     {
                         pthread_mutex_lock(&mutex_cli);
                         box->plz_account[box->friend_number] = recv_pack->data.send_account; 
-                        strcpy(box->write_buff[box->friend_number], recv_pack->data.write_buff);
+                        strcpy(box->write_buff[box->friend_number], recv_pack->data.read_buff);
                         box->friend_number++;
                         printf("消息盒子中来了一条好友请求!!!\n");
                         pthread_mutex_unlock(&mutex_cli);

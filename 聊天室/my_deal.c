@@ -30,6 +30,7 @@ void *deal(void *recv_pack) {
 		case LOGIN:
 			{
 				if (login(pack, mysql) != 0) {
+                       
                     pack->type = ACCOUNT_ERROR;
                     memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
 					strcpy(pack->data.write_buff, "password error");
@@ -211,8 +212,8 @@ void *deal(void *recv_pack) {
             }
         case LOOK_LIST:
             {
-                FRIEND *list;
-                if ((list = look_list(pack, mysql)) != NULL) {
+                FRIEND *list = look_list(pack, mysql);
+                if (list->friend_number != 0) {
                     memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
                     strcpy(pack->data.write_buff, "success");
                     if (send(pack->data.send_fd, pack, sizeof(PACK), 0) < 0) {
