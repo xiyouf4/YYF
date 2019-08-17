@@ -77,7 +77,7 @@ int main() {
  			continue;
  		} else if (events[i].events & EPOLLIN) { 
 			memset(&recv_pack, 0, sizeof(PACK));
- 			if (recv(events[i].data.fd, &recv_pack, sizeof(PACK), 0) < 0) {
+ 			if (recv(events[i].data.fd, &recv_pack, sizeof(PACK), MSG_WAITALL) < 0) {
  				close(events[i].data.fd);
  				perror("recv");
  				continue;
@@ -94,7 +94,7 @@ int main() {
                 
                 continue;
             }
-			if (recv_pack.type != REGISTERED) {
+			if (recv_pack.type == LOGIN) {
  		    	memset(need, 0, sizeof(need));
                 sprintf(need, "select *from user_data where account = %d", recv_pack.data.send_account);
                 pthread_mutex_lock(&mutex);
@@ -103,6 +103,7 @@ int main() {
                 if (!mysql_fetch_row(result)) {
                     recv_pack.type = ACCOUNT_ERROR;
                     memset(recv_pack.data.write_buff, 0, sizeof(recv_pack.data.write_buff));
+                    printf("$$sad\n");
                     strcpy(recv_pack.data.write_buff, "password error");
                     if (send(events[i].data.fd, &recv_pack, sizeof(PACK), 0) < 0) {
                         my_err("send", __LINE__);

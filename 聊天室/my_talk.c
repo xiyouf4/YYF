@@ -221,7 +221,7 @@ int send_gmes(PACK *pack, MYSQL mysql1) {
     return 0;
 }
 
-int send_file(PACK *pack, MYSQL mysql1) {
+/*int send_file(PACK *pack, MYSQL mysql1) {
     MYSQL           mysql = mysql1;
     PACK            *recv_pack = pack;
     MYSQL_RES       *result;
@@ -256,3 +256,66 @@ int send_file(PACK *pack, MYSQL mysql1) {
         return 0;
     }
 }
+
+
+int read_file(PACK *pack, MYSQL mysql1) {
+    PACK            *recv_pack = pack;
+    MYSQL           mysql = mysql1;
+    MYSQL_RES       *result;
+    MYSQL_ROW       row;
+    char            need[100];
+
+    pthread_mutex_lock(&mutex);
+    sprintf(need, "select *from user_data where account = %d", recv_pack->data.recv_account);
+    printf("^^%s\n", need);
+    mysql_query(&mysql, need);
+    result = mysql_store_result(&mysql);
+    row = mysql_fetch_row(result);
+    recv_pack->data.recv_fd = atoi(row[4]);
+    recv_pack->type = SEND_F;
+    if (send(recv_pack->data.recv_fd, recv_pack, sizeof(PACK), 0) < 0) {
+        my_err("send", __LINE__);
+    }
+    recv_pack->type = OK_FILE;
+    if (send(recv_pack->data.send_fd, recv_pack, sizeof(PACK), 0) < 0) {
+        my_err("send", __LINE__);
+    }
+    pthread_mutex_unlock(&mutex);
+    
+    return 0;
+}*/
+
+int ok_file(PACK *pack, MYSQL mysql1) {
+    MYSQL           mysql = mysql1;
+    PACK            *recv_pack = pack;
+    MYSQL_RES       *result;
+    MYSQL_ROW       row;
+    char            need[100];
+    
+    pthread_mutex_lock(&mutex);
+    sprintf(need, "select *from user_data where account = %d", recv_pack->data.recv_account);
+    mysql_query(&mysql, need);
+    result = mysql_store_result(&mysql);
+    row = mysql_fetch_row(result);
+    if (!row) {
+        pthread_mutex_unlock(&mutex);
+        return -1;
+    }
+    if (atoi(row[3]) == 0) {
+        pthread_mutex_unlock(&mutex);
+        return -1;
+    }
+    recv_pack->data.recv_fd = atoi(row[4]);
+    recv_pack->type = RECV_FILE; 
+    if (send(recv_pack->data.recv_fd, recv_pack, sizeof(PACK), 0) < 0) {
+        my_err("send", __LINE__);
+    }
+    recv_pack->type = OK_FILE;
+    if (send(recv_pack->data.send_fd, recv_pack, sizeof(PACK), 0) < 0) {
+        my_err("send", __LINE__);
+    }
+    pthread_mutex_unlock(&mutex);
+    
+    return 0;
+}
+

@@ -63,12 +63,17 @@
 #define LOOK_MEMBER 29
 #define LOOK_GROUP_LIST 30
 #define RECV_FILE 31
+#define READ_FILE 32
+#define OK_FILE 33
+#define SEND_F 34
 
 pthread_mutex_t mutex;
 pthread_mutex_t mutex_cli;
 pthread_cond_t cond_cli;
+pthread_cond_t cond;
 
 typedef struct {
+    int               cont;
     int               send_fd;
     int               recv_fd;
     int               send_account;

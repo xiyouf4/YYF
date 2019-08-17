@@ -8,6 +8,9 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <mysql/mysql.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "my_pack.h"
 #include "my_err.h"
@@ -30,7 +33,6 @@ void *deal(void *recv_pack) {
 		case LOGIN:
 			{
 				if (login(pack, mysql) != 0) {
-                       
                     pack->type = ACCOUNT_ERROR;
                     memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
 					strcpy(pack->data.write_buff, "password error");
@@ -40,7 +42,8 @@ void *deal(void *recv_pack) {
 				} else {
                     memset(pack->data.write_buff, 0, sizeof(pack->data.write_buff));
                     strcpy(pack->data.write_buff, "good");
-                    if (send(pack->data.recv_fd, pack, sizeof(PACK), 0) < 0) {
+                    int ret;
+                    if ((ret = send(pack->data.recv_fd, pack, sizeof(PACK), 0)) < 0) {
                         my_err("send", __LINE__);
                     }
                     while (tmp != NULL) {
@@ -414,21 +417,40 @@ void *deal(void *recv_pack) {
             }
         case SEND_FILE:
             {
-                if (send_file(pack, mysql) == 0) {
-                    memset(pack->data.read_buff, 0, sizeof(pack->data.read_buff));
-                    strcpy(pack->data.read_buff, "success");
-                    if (send(pack->data.send_fd, pack, sizeof(PACK), 0) < 0) {
-                        my_err("send", __LINE__);
-                    }
-                } else {
-                    memset(pack->data.read_buff, 0, sizeof(PACK));
-                    strcpy(pack->data.read_buff, "fail");
-                    if (send(pack->data.send_fd, pack, sizeof(PACK), 0) < 0) {
-                        my_err("send", __LINE__);
-                    }
+                pthread_mutex_lock(&mutex);
+                int fd = open("2.mp4", O_WRONLY|O_CREAT|O_APPEND, S_IRUSR|S_IWUSR|S_IXUSR);
+                write(fd, pack->data.read_buff, 1023);
+                close(fd);
+                printf("%d\n", pack->data.cont);
+                if (send(pack->data.send_fd, pack, sizeof(PACK), 0) < 0) {
+                    my_err("send", __LINE__);
                 }
+                pthread_mutex_unlock(&mutex);
                 break;
             }
+        case READ_FILE:
+            {
+               pthread_mutex_lock(&mutex);
+               int fd = open("2.mp4", O_RDONLY);
+               lseek(fd, 1023*pack->data.cont, SEEK_SET);
+               memset(pack->data.read_buff, 0, sizeof(pack->data.read_buff));
+               if (read(fd, pack->data.read_buff, 1023) == 0) {
+                   strcpy(pack->data.write_buff, "ok");
+               }
+               if (send(pack->data.send_fd, pack, sizeof(PACK), 0) < 0) {
+                    my_err("send", __LINE__);
+               }
+               close(fd);
+               pthread_mutex_unlock(&mutex);
+               break;
+            }
+        case OK_FILE:
+            {
+                    printf("sssssss^^\n");
+                ok_file(pack, mysql);
+                break;
+            }
+       
 	}
 	close_mysql(mysql);
 }
