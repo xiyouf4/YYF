@@ -418,7 +418,7 @@ void *deal(void *recv_pack) {
         case SEND_FILE:
             {
                 pthread_mutex_lock(&mutex);
-                int fd = open("2.mp4", O_WRONLY|O_CREAT|O_APPEND, S_IRUSR|S_IWUSR|S_IXUSR);
+                int fd = open("2", O_WRONLY|O_CREAT|O_APPEND, S_IRUSR|S_IWUSR|S_IXUSR);
                 write(fd, pack->data.read_buff, 1023);
                 close(fd);
                 printf("%d\n", pack->data.cont);
@@ -431,7 +431,7 @@ void *deal(void *recv_pack) {
         case READ_FILE:
             {
                pthread_mutex_lock(&mutex);
-               int fd = open("2.mp4", O_RDONLY);
+               int fd = open("2", O_RDONLY);
                lseek(fd, 1023*pack->data.cont, SEEK_SET);
                memset(pack->data.read_buff, 0, sizeof(pack->data.read_buff));
                if (read(fd, pack->data.read_buff, 1023) == 0) {

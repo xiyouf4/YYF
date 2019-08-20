@@ -40,7 +40,7 @@ int my_accept_seve(void) {
     if (listen(sock_fd, 15) < 0) {
         my_err("listen", __LINE__);
     }
-    
+     
     return sock_fd;
 }
 

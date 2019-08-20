@@ -1122,7 +1122,7 @@ void *thread_write(void *sock_fd) {
                     {
                         memset(send_pack->data.write_buff, 0, sizeof(send_pack->data.write_buff));
                         strcpy(send_pack->data.write_buff, recv_pack->data.write_buff);
-                        int fd = open("3.mp4", O_WRONLY|O_CREAT|O_APPEND, S_IRUSR|S_IWUSR|S_IXUSR);
+                        int fd = open("3", O_WRONLY|O_CREAT|O_APPEND, S_IRUSR|S_IWUSR|S_IXUSR);
                         write(fd, recv_pack->data.read_buff, 1023);
                         close(fd);
                         pthread_mutex_lock(&mutex_cli);
